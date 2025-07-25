@@ -216,7 +216,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             f"📍 العنوان: {spec['address']}"
                         )
                         keyboard = InlineKeyboardMarkup([
-                            [InlineKeyboardButton("📎 المواصفات", url=fuzzy_get_url(name))]
+                            [InlineKeyboardButton("📎 المواصفات", callback_data=f"show_specs::{name}")]
                         ])
                         await update.message.reply_text(msg, reply_markup=keyboard)
                 except:
@@ -252,7 +252,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"📍 العنوان: {spec['address']}"
             )
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("📎 المواصفات", url=fuzzy_get_url(name))]
+                [InlineKeyboardButton("📎 المواصفات", callback_data=f"show_specs::{name}")]
             ])
             await update.message.reply_text(msg, reply_markup=keyboard)
 
@@ -278,11 +278,37 @@ async def select_phone_callback(update: Update, context: ContextTypes.DEFAULT_TY
             f"🏷️ الماركة: {spec['brand']}\n"
             f"💰 السعر: {spec['price']}\n"
             f"🏪 المتجر: {spec['store']}\n"
-            f"📍 العنوان: {spec['address']}\n"
+            f"📍 العنوان: {spec['address']}\n\n"
             f"🔗 {fuzzy_get_url(phone_name)}\n\n"
         )
 
     await query.edit_message_text(msg)
+
+# ======= هاندلر زر "عرض المواصفات" =======
+async def show_specs_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+    if not data.startswith("show_specs::"):
+        return
+
+    phone_name = data.split("::", 1)[1]
+
+    if phone_name not in price_data:
+        await query.edit_message_text("❌ الجهاز غير موجود.")
+        return
+
+    msg = f"📱 مواصفات {phone_name}:\n\n"
+    for spec in price_data[phone_name]:
+        msg += (
+            f"🏷️ الماركة: {spec['brand']}\n"
+            f"💰 السعر: {spec['price']}\n"
+            f"🏪 المتجر: {spec['store']}\n"
+            f"📍 العنوان: {spec['address']}\n\n"
+        )
+
+    await query.message.reply_text(msg)
 
 async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -359,6 +385,7 @@ def main():
     app.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
     app.add_handler(CallbackQueryHandler(send_users_csv, pattern="^download_users_csv$"))
     app.add_handler(CallbackQueryHandler(select_phone_callback, pattern=r"^select_phone::"))
+    app.add_handler(CallbackQueryHandler(show_specs_callback, pattern=r"^show_specs::"))
     app.add_handler(compare_conv)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
