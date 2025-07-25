@@ -1,0 +1,1820 @@
+{
+  "Samsung devices": [
+    {
+      "name": "Galaxy Z Fold7",
+      "url": "https://www.gsmarena.com/samsung_galaxy_z_fold7-13826.php"
+    },
+    {
+      "name": "Galaxy Z Flip7",
+      "url": "https://www.gsmarena.com/samsung_galaxy_z_flip7-13712.php"
+    },
+    {
+      "name": "Galaxy Z Flip7 FE",
+      "url": "https://www.gsmarena.com/samsung_galaxy_z_flip7_fe_5g-13844.php"
+    },
+    {
+      "name": "Galaxy Watch8 Classic",
+      "url": "https://www.gsmarena.com/samsung_galaxy_watch8_classic-13998.php"
+    },
+    {
+      "name": "Galaxy Watch8",
+      "url": "https://www.gsmarena.com/samsung_galaxy_watch8-13997.php"
+    },
+    {
+      "name": "Galaxy M36",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m36_5g-13967.php"
+    },
+    {
+      "name": "Galaxy S25 Edge",
+      "url": "https://www.gsmarena.com/samsung_galaxy_s25_edge-13506.php"
+    },
+    {
+      "name": "Galaxy F56",
+      "url": "https://www.gsmarena.com/samsung_galaxy_f56_5g-13855.php"
+    },
+    {
+      "name": "Galaxy M56",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m56_5g-13801.php"
+    },
+    {
+      "name": "Galaxy XCover7 Pro",
+      "url": "https://www.gsmarena.com/samsung_galaxy_xcover7_pro-13780.php"
+    },
+    {
+      "name": "Galaxy Tab Active5 Pro",
+      "url": "https://www.gsmarena.com/samsung_galaxy_tab_active5_pro-13790.php"
+    },
+    {
+      "name": "Galaxy Tab S10 FE+",
+      "url": "https://www.gsmarena.com/samsung_galaxy_tab_s10_fe+-13760.php"
+    },
+    {
+      "name": "Galaxy Tab S10 FE",
+      "url": "https://www.gsmarena.com/samsung_galaxy_tab_s10_fe-13761.php"
+    },
+    {
+      "name": "Galaxy F16",
+      "url": "https://www.gsmarena.com/samsung_galaxy_f16-13721.php"
+    },
+    {
+      "name": "Galaxy A56",
+      "url": "https://www.gsmarena.com/samsung_galaxy_a56-13603.php"
+    },
+    {
+      "name": "Galaxy A36",
+      "url": "https://www.gsmarena.com/samsung_galaxy_a36-13497.php"
+    },
+    {
+      "name": "Galaxy A26",
+      "url": "https://www.gsmarena.com/samsung_galaxy_a26-13679.php"
+    },
+    {
+      "name": "Galaxy M16",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m16-13680.php"
+    },
+    {
+      "name": "Galaxy M06",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m06-13681.php"
+    },
+    {
+      "name": "Galaxy A06 5G",
+      "url": "https://www.gsmarena.com/samsung_galaxy_a06_5g-13662.php"
+    },
+    {
+      "name": "Galaxy F06 5G",
+      "url": "https://www.gsmarena.com/samsung_galaxy_f06_5g-13663.php"
+    },
+    {
+      "name": "Galaxy S25 Ultra",
+      "url": "https://www.gsmarena.com/samsung_galaxy_s25_ultra-13322.php"
+    },
+    {
+      "name": "Galaxy S25+",
+      "url": "https://www.gsmarena.com/samsung_galaxy_s25+-13609.php"
+    },
+    {
+      "name": "Galaxy S25",
+      "url": "https://www.gsmarena.com/samsung_galaxy_s25-13610.php"
+    },
+    {
+      "name": "Galaxy Z Fold Special",
+      "url": "https://www.gsmarena.com/samsung_galaxy_z_fold_special-13452.php"
+    },
+    {
+      "name": "Galaxy A16",
+      "url": "https://www.gsmarena.com/samsung_galaxy_a16-13383.php"
+    },
+    {
+      "name": "Galaxy A16 5G",
+      "url": "https://www.gsmarena.com/samsung_galaxy_a16_5g-13346.php"
+    },
+    {
+      "name": "Galaxy S24 FE",
+      "url": "https://www.gsmarena.com/samsung_galaxy_s24_fe-13262.php"
+    },
+    {
+      "name": "Galaxy Tab S10 Ultra",
+      "url": "https://www.gsmarena.com/samsung_galaxy_tab_s10_ultra-13362.php"
+    },
+    {
+      "name": "Galaxy Tab S10+",
+      "url": "https://www.gsmarena.com/samsung_galaxy_tab_s10+-13363.php"
+    },
+    {
+      "name": "Galaxy M55s",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m55s-13354.php"
+    },
+    {
+      "name": "Galaxy F05",
+      "url": "https://www.gsmarena.com/samsung_galaxy_f05-13345.php"
+    },
+    {
+      "name": "Galaxy M05",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m05-13327.php"
+    },
+    {
+      "name": "Galaxy A06",
+      "url": "https://www.gsmarena.com/samsung_galaxy_a06-13265.php"
+    },
+    {
+      "name": "Galaxy F14 4G",
+      "url": "https://www.gsmarena.com/samsung_galaxy_f14_4g-13247.php"
+    },
+    {
+      "name": "Galaxy Z Fold6",
+      "url": "https://www.gsmarena.com/samsung_galaxy_z_fold6-13147.php"
+    },
+    {
+      "name": "Galaxy Z Flip6",
+      "url": "https://www.gsmarena.com/samsung_galaxy_z_flip6-13192.php"
+    },
+    {
+      "name": "Galaxy Watch Ultra",
+      "url": "https://www.gsmarena.com/samsung_galaxy_watch_ultra-13127.php"
+    },
+    {
+      "name": "Galaxy Watch7",
+      "url": "https://www.gsmarena.com/samsung_galaxy_watch7-13128.php"
+    },
+    {
+      "name": "Galaxy Watch FE",
+      "url": "https://www.gsmarena.com/samsung_galaxy_watch_fe-13112.php"
+    },
+    {
+      "name": "Galaxy M35",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m35-13006.php"
+    },
+    {
+      "name": "Galaxy F55",
+      "url": "https://www.gsmarena.com/samsung_galaxy_f55-12885.php"
+    },
+    {
+      "name": "Galaxy C55",
+      "url": "https://www.gsmarena.com/samsung_galaxy_c55-12945.php"
+    },
+    {
+      "name": "Galaxy M55",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m55-12896.php"
+    },
+    {
+      "name": "Galaxy Tab S6 Lite (2024)",
+      "url": "https://www.gsmarena.com/samsung_galaxy_tab_s6_lite_(2024)-12897.php"
+    },
+    {
+      "name": "Galaxy A55",
+      "url": "https://www.gsmarena.com/samsung_galaxy_a55-12824.php"
+    },
+    {
+      "name": "Galaxy A35",
+      "url": "https://www.gsmarena.com/samsung_galaxy_a35-12705.php"
+    },
+    {
+      "name": "Galaxy M15",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m15-12833.php"
+    },
+    {
+      "name": "Galaxy M14 4G",
+      "url": "https://www.gsmarena.com/samsung_galaxy_m14_4g-12862.php"
+    },
+    {
+      "name": "Galaxy F15",
+      "url": "https://www.gsmarena.com/samsung_galaxy_f15-12831.php"
+    }
+  ],
+  "Realme devices": [
+    {
+      "name": "CP12 Neo",
+      "url": "https://www.gsmarena.com/coolpad_cp12_neo-13759.php"
+    },
+    {
+      "name": "X100",
+      "url": "https://www.gsmarena.com/coolpad_x100-13669.php"
+    },
+    {
+      "name": "Cool 40i",
+      "url": "https://www.gsmarena.com/coolpad_cool_40i-13575.php"
+    },
+    {
+      "name": "C16s",
+      "url": "https://www.gsmarena.com/coolpad_c16s-13535.php"
+    },
+    {
+      "name": "C16",
+      "url": "https://www.gsmarena.com/coolpad_c16-13348.php"
+    },
+    {
+      "name": "Cool 30 Play",
+      "url": "https://www.gsmarena.com/coolpad_cool_30_play-13149.php"
+    },
+    {
+      "name": "C15",
+      "url": "https://www.gsmarena.com/coolpad_c15-13136.php"
+    },
+    {
+      "name": "Cool 30i",
+      "url": "https://www.gsmarena.com/coolpad_cool_30i-12766.php"
+    },
+    {
+      "name": "CP12s",
+      "url": "https://www.gsmarena.com/coolpad_cp12s-12729.php"
+    },
+    {
+      "name": "CP12",
+      "url": "https://www.gsmarena.com/coolpad_cp12-12422.php"
+    },
+    {
+      "name": "Cool 20+",
+      "url": "https://www.gsmarena.com/coolpad_cool_20+-12421.php"
+    },
+    {
+      "name": "CP12p",
+      "url": "https://www.gsmarena.com/coolpad_cp12p-12423.php"
+    },
+    {
+      "name": "Cool 20s",
+      "url": "https://www.gsmarena.com/coolpad_cool_20s-11615.php"
+    },
+    {
+      "name": "Cool 20",
+      "url": "https://www.gsmarena.com/coolpad_cool_20-11620.php"
+    },
+    {
+      "name": "Cool 20 Pro",
+      "url": "https://www.gsmarena.com/coolpad_cool_20_pro-11256.php"
+    },
+    {
+      "name": "Cool 10A",
+      "url": "https://www.gsmarena.com/coolpad_cool_10a-10836.php"
+    },
+    {
+      "name": "Cool S",
+      "url": "https://www.gsmarena.com/coolpad_cool_s-10685.php"
+    },
+    {
+      "name": "Cool 6",
+      "url": "https://www.gsmarena.com/coolpad_cool_6-10513.php"
+    },
+    {
+      "name": "Cool 12A",
+      "url": "https://www.gsmarena.com/coolpad_cool_12a-10491.php"
+    },
+    {
+      "name": "Cool 10",
+      "url": "https://www.gsmarena.com/coolpad_cool_10-10492.php"
+    },
+    {
+      "name": "Legacy 5G",
+      "url": "https://www.gsmarena.com/coolpad_legacy_5g-10030.php"
+    },
+    {
+      "name": "Legacy",
+      "url": "https://www.gsmarena.com/coolpad_legacy-9960.php"
+    },
+    {
+      "name": "Cool 5",
+      "url": "https://www.gsmarena.com/coolpad_cool_5-9902.php"
+    },
+    {
+      "name": "Cool 3 Plus",
+      "url": "https://www.gsmarena.com/coolpad_cool_3_plus-9762.php"
+    },
+    {
+      "name": "Cool Play 8",
+      "url": "https://www.gsmarena.com/coolpad_cool_play_8-9488.php"
+    },
+    {
+      "name": "Mega 5A",
+      "url": "https://www.gsmarena.com/coolpad_mega_5a-9297.php"
+    },
+    {
+      "name": "Note 6",
+      "url": "https://www.gsmarena.com/coolpad_note_6-9189.php"
+    },
+    {
+      "name": "Cool 2",
+      "url": "https://www.gsmarena.com/coolpad_cool_2-9183.php"
+    },
+    {
+      "name": "Cool Play 6",
+      "url": "https://www.gsmarena.com/coolpad_cool_play_6-8820.php"
+    },
+    {
+      "name": "Cool M7",
+      "url": "https://www.gsmarena.com/coolpad_cool_m7-8821.php"
+    },
+    {
+      "name": "NX1",
+      "url": "https://www.gsmarena.com/coolpad_nx1-8807.php"
+    },
+    {
+      "name": "Defiant",
+      "url": "https://www.gsmarena.com/coolpad_defiant-8754.php"
+    },
+    {
+      "name": "Note 5 Lite",
+      "url": "https://www.gsmarena.com/coolpad_note_5_lite-8618.php"
+    },
+    {
+      "name": "Cool1 dual",
+      "url": "https://www.gsmarena.com/coolpad_cool1_dual-8272.php"
+    },
+    {
+      "name": "Conjr",
+      "url": "https://www.gsmarena.com/coolpad_conjr-8511.php"
+    },
+    {
+      "name": "Cool S1",
+      "url": "https://www.gsmarena.com/coolpad_cool_s1-8481.php"
+    },
+    {
+      "name": "Note 3s",
+      "url": "https://www.gsmarena.com/coolpad_note_3s-8473.php"
+    },
+    {
+      "name": "Mega 3",
+      "url": "https://www.gsmarena.com/coolpad_mega_3-8464.php"
+    },
+    {
+      "name": "Note 5",
+      "url": "https://www.gsmarena.com/coolpad_note_5-8364.php"
+    },
+    {
+      "name": "Modena 2",
+      "url": "https://www.gsmarena.com/coolpad_modena_2-8326.php"
+    },
+    {
+      "name": "Mega",
+      "url": "https://www.gsmarena.com/coolpad_mega-8267.php"
+    },
+    {
+      "name": "Torino",
+      "url": "https://www.gsmarena.com/coolpad_torino-8273.php"
+    },
+    {
+      "name": "Note 3 Plus",
+      "url": "https://www.gsmarena.com/coolpad_note_3_plus-8270.php"
+    },
+    {
+      "name": "Max",
+      "url": "https://www.gsmarena.com/coolpad_max-8165.php"
+    },
+    {
+      "name": "Porto S",
+      "url": "https://www.gsmarena.com/coolpad_porto_s-7895.php"
+    },
+    {
+      "name": "Torino S",
+      "url": "https://www.gsmarena.com/coolpad_torino_s-7898.php"
+    },
+    {
+      "name": "Note 3 Lite",
+      "url": "https://www.gsmarena.com/coolpad_note_3_lite-7877.php"
+    },
+    {
+      "name": "Roar",
+      "url": "https://www.gsmarena.com/coolpad_roar-7752.php"
+    },
+    {
+      "name": "Note 3",
+      "url": "https://www.gsmarena.com/coolpad_note_3-7655.php"
+    },
+    {
+      "name": "Shine",
+      "url": "https://www.gsmarena.com/coolpad_shine-7654.php"
+    }
+  ],
+  "Tecno devices": [
+    {
+      "name": "Pova 7 Pro",
+      "url": "https://www.gsmarena.com/tecno_pova_7_pro_5g-13990.php"
+    },
+    {
+      "name": "Pova 7",
+      "url": "https://www.gsmarena.com/tecno_pova_7_5g-13991.php"
+    },
+    {
+      "name": "Spark 40 Pro+",
+      "url": "https://www.gsmarena.com/tecno_spark_40_pro+-13986.php"
+    },
+    {
+      "name": "Spark 40 Pro",
+      "url": "https://www.gsmarena.com/tecno_spark_40_pro-13985.php"
+    },
+    {
+      "name": "Spark 40",
+      "url": "https://www.gsmarena.com/tecno_spark_40_4g-13984.php"
+    },
+    {
+      "name": "Pova 7 Ultra",
+      "url": "https://www.gsmarena.com/tecno_pova_7_ultra_5g-13976.php"
+    },
+    {
+      "name": "Pova 7 4G",
+      "url": "https://www.gsmarena.com/tecno_pova_7-13974.php"
+    },
+    {
+      "name": "Spark Go 2",
+      "url": "https://www.gsmarena.com/tecno_spark_go_2-13975.php"
+    },
+    {
+      "name": "Pova Curve",
+      "url": "https://www.gsmarena.com/tecno_pova_curve_5g-13915.php"
+    },
+    {
+      "name": "Camon 40 Premier",
+      "url": "https://www.gsmarena.com/tecno_camon_40_premier-13694.php"
+    },
+    {
+      "name": "Camon 40 Pro",
+      "url": "https://www.gsmarena.com/tecno_camon_40_pro_5g-13695.php"
+    },
+    {
+      "name": "Camon 40 Pro 4G",
+      "url": "https://www.gsmarena.com/tecno_camon_40_pro-13696.php"
+    },
+    {
+      "name": "Camon 40",
+      "url": "https://www.gsmarena.com/tecno_camon_40-13697.php"
+    },
+    {
+      "name": "Spark Go 1S",
+      "url": "https://www.gsmarena.com/tecno_spark_go_1s-13648.php"
+    },
+    {
+      "name": "Megapad 11",
+      "url": "https://www.gsmarena.com/tecno_megapad_11-13546.php"
+    },
+    {
+      "name": "Pop 9 4G",
+      "url": "https://www.gsmarena.com/tecno_pop_9_4g-13509.php"
+    },
+    {
+      "name": "Megapad",
+      "url": "https://www.gsmarena.com/tecno_megapad-13268.php"
+    },
+    {
+      "name": "Camon 30S",
+      "url": "https://www.gsmarena.com/tecno_camon_30s-13426.php"
+    },
+    {
+      "name": "Spark 30C 5G",
+      "url": "https://www.gsmarena.com/tecno_spark_30c_5g-13385.php"
+    },
+    {
+      "name": "Spark 30 5G",
+      "url": "https://www.gsmarena.com/tecno_spark_30_5g-13384.php"
+    },
+    {
+      "name": "Pop 9",
+      "url": "https://www.gsmarena.com/tecno_pop_9-13358.php"
+    },
+    {
+      "name": "Spark 30 Pro",
+      "url": "https://www.gsmarena.com/tecno_spark_30_pro-13357.php"
+    },
+    {
+      "name": "Spark 30",
+      "url": "https://www.gsmarena.com/tecno_spark_30-13356.php"
+    },
+    {
+      "name": "Phantom V Fold2",
+      "url": "https://www.gsmarena.com/tecno_phantom_v_fold2-13334.php"
+    },
+    {
+      "name": "Phantom V Flip2",
+      "url": "https://www.gsmarena.com/tecno_phantom_v_flip2-13335.php"
+    },
+    {
+      "name": "Pova 6 Neo 5G",
+      "url": "https://www.gsmarena.com/tecno_pova_6_neo_5g-13326.php"
+    },
+    {
+      "name": "Spark 30C",
+      "url": "https://www.gsmarena.com/tecno_spark_30c-13310.php"
+    },
+    {
+      "name": "Spark Go 1",
+      "url": "https://www.gsmarena.com/tecno_spark_go_1-13274.php"
+    },
+    {
+      "name": "Camon 30S Pro",
+      "url": "https://www.gsmarena.com/tecno_camon_30s_pro-13242.php"
+    },
+    {
+      "name": "Spark 20P",
+      "url": "https://www.gsmarena.com/tecno_spark_20p-13125.php"
+    },
+    {
+      "name": "Spark 20 Pro 5G",
+      "url": "https://www.gsmarena.com/tecno_spark_20_pro_5g-13124.php"
+    },
+    {
+      "name": "Pova 6 Neo",
+      "url": "https://www.gsmarena.com/tecno_pova_6_neo-12911.php"
+    },
+    {
+      "name": "Pova 6",
+      "url": "https://www.gsmarena.com/tecno_pova_6-12910.php"
+    },
+    {
+      "name": "Camon 30 Premier",
+      "url": "https://www.gsmarena.com/tecno_camon_30_premier-12845.php"
+    },
+    {
+      "name": "Camon 30 Pro",
+      "url": "https://www.gsmarena.com/tecno_camon_30_pro-12846.php"
+    },
+    {
+      "name": "Camon 30 5G",
+      "url": "https://www.gsmarena.com/tecno_camon_30_5g-12847.php"
+    },
+    {
+      "name": "Camon 30",
+      "url": "https://www.gsmarena.com/tecno_camon_30-12848.php"
+    },
+    {
+      "name": "Pova 6 Pro",
+      "url": "https://www.gsmarena.com/tecno_pova_6_pro-12830.php"
+    },
+    {
+      "name": "Spark 20 Pro+",
+      "url": "https://www.gsmarena.com/tecno_spark_20_pro+-12770.php"
+    },
+    {
+      "name": "Spark 20 Pro",
+      "url": "https://www.gsmarena.com/tecno_spark_20_pro-12747.php"
+    },
+    {
+      "name": "Spark 20",
+      "url": "https://www.gsmarena.com/tecno_spark_20-12722.php"
+    },
+    {
+      "name": "Spark 20C",
+      "url": "https://www.gsmarena.com/tecno_spark_20c-12710.php"
+    },
+    {
+      "name": "Spark Go 2024",
+      "url": "https://www.gsmarena.com/tecno_spark_go_2024-12702.php"
+    },
+    {
+      "name": "Pop 8",
+      "url": "https://www.gsmarena.com/tecno_pop_8-12644.php"
+    },
+    {
+      "name": "Camon 20s Pro 5G",
+      "url": "https://www.gsmarena.com/tecno_camon_20s_pro_5g-12933.php"
+    },
+    {
+      "name": "Phantom V Flip",
+      "url": "https://www.gsmarena.com/tecno_phantom_v_flip-12580.php"
+    },
+    {
+      "name": "Pova 5 Pro",
+      "url": "https://www.gsmarena.com/tecno_pova_5_pro-12448.php"
+    },
+    {
+      "name": "Pova Neo 3",
+      "url": "https://www.gsmarena.com/tecno_pova_neo_3-12394.php"
+    },
+    {
+      "name": "Pova 5",
+      "url": "https://www.gsmarena.com/tecno_pova_5-12393.php"
+    },
+    {
+      "name": "Camon 20 Premier",
+      "url": "https://www.gsmarena.com/tecno_camon_20_premier-12256.php"
+    }
+  ],
+  "Infinix devices": [
+    {
+      "name": "Hot 60",
+      "url": "https://www.gsmarena.com/infinix_hot_60_5g-14006.php"
+    },
+    {
+      "name": "Hot 60 Pro+",
+      "url": "https://www.gsmarena.com/infinix_hot_60_pro+-14002.php"
+    },
+    {
+      "name": "Hot 60 Pro",
+      "url": "https://www.gsmarena.com/infinix_hot_60_pro-14003.php"
+    },
+    {
+      "name": "Hot 60i",
+      "url": "https://www.gsmarena.com/infinix_hot_60i-13983.php"
+    },
+    {
+      "name": "Smart 10 HD",
+      "url": "https://www.gsmarena.com/infinix_smart_10_hd-13954.php"
+    },
+    {
+      "name": "Smart 10 Plus",
+      "url": "https://www.gsmarena.com/infinix_smart_10_plus-13953.php"
+    },
+    {
+      "name": "Smart 10",
+      "url": "https://www.gsmarena.com/infinix_smart_10-13933.php"
+    },
+    {
+      "name": "Xpad 20",
+      "url": "https://www.gsmarena.com/infinix_xpad_20-13922.php"
+    },
+    {
+      "name": "GT 30 Pro",
+      "url": "https://www.gsmarena.com/infinix_gt_30_pro_5g-13889.php"
+    },
+    {
+      "name": "Xpad GT",
+      "url": "https://www.gsmarena.com/infinix_xpad_gt-13890.php"
+    },
+    {
+      "name": "Note 50s",
+      "url": "https://www.gsmarena.com/infinix_note_50s_5g-13793.php"
+    },
+    {
+      "name": "Note 50x",
+      "url": "https://www.gsmarena.com/infinix_note_50x-13747.php"
+    },
+    {
+      "name": "Note 50 Pro+",
+      "url": "https://www.gsmarena.com/infinix_note_50_pro+-13746.php"
+    },
+    {
+      "name": "Note 50 Pro 4G",
+      "url": "https://www.gsmarena.com/infinix_note_50_pro_4g-13701.php"
+    },
+    {
+      "name": "Note 50 4G",
+      "url": "https://www.gsmarena.com/infinix_note_50_4g-13705.php"
+    },
+    {
+      "name": "Smart 9 HD",
+      "url": "https://www.gsmarena.com/infinix_smart_9_hd-13590.php"
+    },
+    {
+      "name": "Hot 50 Pro 4G",
+      "url": "https://www.gsmarena.com/infinix_hot_50_pro_4g-13461.php"
+    },
+    {
+      "name": "Hot 50 Pro+ 4G",
+      "url": "https://www.gsmarena.com/infinix_hot_50_pro+_4g-13408.php"
+    },
+    {
+      "name": "Note 40S",
+      "url": "https://www.gsmarena.com/infinix_note_40s-13460.php"
+    },
+    {
+      "name": "Hot 50i",
+      "url": "https://www.gsmarena.com/infinix_hot_50i-13375.php"
+    },
+    {
+      "name": "Smart 9",
+      "url": "https://www.gsmarena.com/infinix_smart_9-13374.php"
+    },
+    {
+      "name": "Hot 50 4G",
+      "url": "https://www.gsmarena.com/infinix_hot_50_4g-13367.php"
+    },
+    {
+      "name": "Zero Flip",
+      "url": "https://www.gsmarena.com/infinix_zero_flip-13347.php"
+    },
+    {
+      "name": "Hot 50",
+      "url": "https://www.gsmarena.com/infinix_hot_50-13305.php"
+    },
+    {
+      "name": "Zero 40",
+      "url": "https://www.gsmarena.com/infinix_zero_40-13290.php"
+    },
+    {
+      "name": "Zero 40 4G",
+      "url": "https://www.gsmarena.com/infinix_zero_40_4g-13276.php"
+    },
+    {
+      "name": "Xpad",
+      "url": "https://www.gsmarena.com/infinix_xpad-13263.php"
+    },
+    {
+      "name": "Note 40X 5G",
+      "url": "https://www.gsmarena.com/infinix_note_40x_5g-13246.php"
+    },
+    {
+      "name": "Note 40 5G",
+      "url": "https://www.gsmarena.com/infinix_note_40_5g-13035.php"
+    },
+    {
+      "name": "GT 20 Pro",
+      "url": "https://www.gsmarena.com/infinix_gt_20_pro-12962.php"
+    },
+    {
+      "name": "Note 40 Pro+",
+      "url": "https://www.gsmarena.com/infinix_note_40_pro+-12874.php"
+    },
+    {
+      "name": "Note 40 Pro",
+      "url": "https://www.gsmarena.com/infinix_note_40_pro-12875.php"
+    },
+    {
+      "name": "Note 40 Pro 4G",
+      "url": "https://www.gsmarena.com/infinix_note_40_pro_4g-12876.php"
+    },
+    {
+      "name": "Note 40",
+      "url": "https://www.gsmarena.com/infinix_note_40-12877.php"
+    },
+    {
+      "name": "Smart 8 Plus",
+      "url": "https://www.gsmarena.com/infinix_smart_8_plus-12817.php"
+    },
+    {
+      "name": "Smart 8 Pro",
+      "url": "https://www.gsmarena.com/infinix_smart_8_pro-12812.php"
+    },
+    {
+      "name": "Smart 8 (India)",
+      "url": "https://www.gsmarena.com/infinix_smart_8_(india)-12792.php"
+    },
+    {
+      "name": "Smart 8 HD",
+      "url": "https://www.gsmarena.com/infinix_smart_8_hd-12736.php"
+    },
+    {
+      "name": "Hot 40 Pro",
+      "url": "https://www.gsmarena.com/infinix_hot_40_pro-12733.php"
+    },
+    {
+      "name": "Hot 40",
+      "url": "https://www.gsmarena.com/infinix_hot_40-12732.php"
+    },
+    {
+      "name": "Hot 40i",
+      "url": "https://www.gsmarena.com/infinix_hot_40i-12731.php"
+    },
+    {
+      "name": "Smart 8",
+      "url": "https://www.gsmarena.com/infinix_smart_8-12642.php"
+    },
+    {
+      "name": "Zero 30 4G",
+      "url": "https://www.gsmarena.com/infinix_zero_30_4g-12641.php"
+    },
+    {
+      "name": "Zero 30",
+      "url": "https://www.gsmarena.com/infinix_zero_30-12518.php"
+    },
+    {
+      "name": "GT 10 Pro",
+      "url": "https://www.gsmarena.com/infinix_gt_10_pro-12451.php"
+    },
+    {
+      "name": "Hot 30 5G",
+      "url": "https://www.gsmarena.com/infinix_hot_30_5g-12424.php"
+    },
+    {
+      "name": "Note 30 VIP",
+      "url": "https://www.gsmarena.com/infinix_note_30_vip-12365.php"
+    },
+    {
+      "name": "Hot 30 Play NFC",
+      "url": "https://www.gsmarena.com/infinix_hot_30_play_nfc-12289.php"
+    },
+    {
+      "name": "Note 30 Pro",
+      "url": "https://www.gsmarena.com/infinix_note_30_pro-12273.php"
+    },
+    {
+      "name": "Note 30",
+      "url": "https://www.gsmarena.com/infinix_note_30-12288.php"
+    }
+  ],
+  "Xiaomi devices": [
+    {
+      "name": "Redmi K80 Ultra",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_k80_ultra_5g-13965.php"
+    },
+    {
+      "name": "Mix Flip 2",
+      "url": "https://www.gsmarena.com/xiaomi_mix_flip_2_5g-13980.php"
+    },
+    {
+      "name": "Watch S4 41mm",
+      "url": "https://www.gsmarena.com/xiaomi_watch_s4_41mm-13981.php"
+    },
+    {
+      "name": "Pad 7S Pro 12.5",
+      "url": "https://www.gsmarena.com/xiaomi_pad_7s_pro_12_5-13968.php"
+    },
+    {
+      "name": "Redmi K Pad",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_k_pad-13960.php"
+    },
+    {
+      "name": "Poco F7",
+      "url": "https://www.gsmarena.com/xiaomi_poco_f7_5g-13951.php"
+    },
+    {
+      "name": "Redmi Pad 2",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_pad_2-13908.php"
+    },
+    {
+      "name": "15S Pro",
+      "url": "https://www.gsmarena.com/xiaomi_15s_pro_5g-13895.php"
+    },
+    {
+      "name": "Civi 5 Pro",
+      "url": "https://www.gsmarena.com/xiaomi_civi_5_pro_5g-13875.php"
+    },
+    {
+      "name": "Pad 7 Ultra",
+      "url": "https://www.gsmarena.com/xiaomi_pad_7_ultra-13896.php"
+    },
+    {
+      "name": "Redmi Turbo 4 Pro",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_turbo_4_pro-13617.php"
+    },
+    {
+      "name": "Redmi Watch Move",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_watch_move-13806.php"
+    },
+    {
+      "name": "Poco C71",
+      "url": "https://www.gsmarena.com/xiaomi_poco_c71_4g-13767.php"
+    },
+    {
+      "name": "Poco F7 Ultra",
+      "url": "https://www.gsmarena.com/xiaomi_poco_f7_ultra-13723.php"
+    },
+    {
+      "name": "Poco F7 Pro",
+      "url": "https://www.gsmarena.com/xiaomi_poco_f7_pro-13724.php"
+    },
+    {
+      "name": "Redmi 13x",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_13x_4g-13764.php"
+    },
+    {
+      "name": "Redmi A5 4G",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_a5_4g-13737.php"
+    },
+    {
+      "name": "Redmi Note 14S",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14s-13730.php"
+    },
+    {
+      "name": "15 Ultra",
+      "url": "https://www.gsmarena.com/xiaomi_15_ultra-13657.php"
+    },
+    {
+      "name": "15",
+      "url": "https://www.gsmarena.com/xiaomi_15-13472.php"
+    },
+    {
+      "name": "Black Shark Pad 6",
+      "url": "https://www.gsmarena.com/xiaomi_black_shark_pad_6_4g-13774.php"
+    },
+    {
+      "name": "Poco M7",
+      "url": "https://www.gsmarena.com/xiaomi_poco_m7-13678.php"
+    },
+    {
+      "name": "Redmi Note 14 Pro+ 5G",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14_pro+_5g_(global)-13612.php"
+    },
+    {
+      "name": "Redmi Note 14 Pro 5G",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14_pro_5g_(global)-13613.php"
+    },
+    {
+      "name": "Redmi Note 14 Pro 4G",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14_pro_4g_(global)-13614.php"
+    },
+    {
+      "name": "Redmi Note 14 5G",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14_5g_(global)-13615.php"
+    },
+    {
+      "name": "Redmi Note 14 4G",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14_4g_(global)-13616.php"
+    },
+    {
+      "name": "Poco X7 Pro",
+      "url": "https://www.gsmarena.com/xiaomi_poco_x7_pro-13582.php"
+    },
+    {
+      "name": "Poco X7",
+      "url": "https://www.gsmarena.com/xiaomi_poco_x7-13604.php"
+    },
+    {
+      "name": "Redmi 14C 5G",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_14c_5g-13595.php"
+    },
+    {
+      "name": "Redmi 14C (China)",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_14c_(china)-13627.php"
+    },
+    {
+      "name": "Redmi Turbo 4",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_turbo_4-13598.php"
+    },
+    {
+      "name": "Poco M7 Pro 5G",
+      "url": "https://www.gsmarena.com/xiaomi_poco_m7_pro_5g-13570.php"
+    },
+    {
+      "name": "Poco C75 5G",
+      "url": "https://www.gsmarena.com/xiaomi_poco_c75_5g-13571.php"
+    },
+    {
+      "name": "Redmi Note 14 5G (India)",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14-13559.php"
+    },
+    {
+      "name": "Redmi Note 14 Pro 5G (India)",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14_pro-13355.php"
+    },
+    {
+      "name": "Redmi Note 14 Pro+ 5G (India)",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14_pro+-13364.php"
+    },
+    {
+      "name": "Redmi K80 Pro",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_k80_pro-13524.php"
+    },
+    {
+      "name": "Redmi K80",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_k80-13525.php"
+    },
+    {
+      "name": "Pad 7 Pro",
+      "url": "https://www.gsmarena.com/xiaomi_pad_7_pro-13474.php"
+    },
+    {
+      "name": "Pad 7",
+      "url": "https://www.gsmarena.com/xiaomi_pad_7-13475.php"
+    },
+    {
+      "name": "Redmi Watch 5",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_watch_5-13658.php"
+    },
+    {
+      "name": "Watch S4",
+      "url": "https://www.gsmarena.com/xiaomi_watch_s4-13476.php"
+    },
+    {
+      "name": "15 Pro",
+      "url": "https://www.gsmarena.com/xiaomi_15_pro-13473.php"
+    },
+    {
+      "name": "Poco C75",
+      "url": "https://www.gsmarena.com/xiaomi_poco_c75-13435.php"
+    },
+    {
+      "name": "Redmi A4",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_a4-13444.php"
+    },
+    {
+      "name": "Redmi A3 Pro",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_a3_pro-13432.php"
+    },
+    {
+      "name": "14T Pro",
+      "url": "https://www.gsmarena.com/xiaomi_14t_pro-13328.php"
+    },
+    {
+      "name": "14T",
+      "url": "https://www.gsmarena.com/xiaomi_14t-13329.php"
+    },
+    {
+      "name": "Redmi Note 14 5G (China)",
+      "url": "https://www.gsmarena.com/xiaomi_redmi_note_14_(china)-13366.php"
+    }
+  ],
+  "Honor devices": [
+    {
+      "name": "Magic V5",
+      "url": "https://www.gsmarena.com/honor_magic_v5-13982.php"
+    },
+    {
+      "name": "X6c",
+      "url": "https://www.gsmarena.com/honor_x6c-13938.php"
+    },
+    {
+      "name": "400 Pro (China)",
+      "url": "https://www.gsmarena.com/honor_400_pro_5g_(china)-13929.php"
+    },
+    {
+      "name": "400 (China)",
+      "url": "https://www.gsmarena.com/honor_400_5g_(china)-13930.php"
+    },
+    {
+      "name": "400 Pro",
+      "url": "https://www.gsmarena.com/honor_400_pro_5g-13798.php"
+    },
+    {
+      "name": "400",
+      "url": "https://www.gsmarena.com/honor_400_5g-13799.php"
+    },
+    {
+      "name": "Pad 10",
+      "url": "https://www.gsmarena.com/honor_pad_10-13897.php"
+    },
+    {
+      "name": "X70i",
+      "url": "https://www.gsmarena.com/honor_x70i_5g-13816.php"
+    },
+    {
+      "name": "GT Pro",
+      "url": "https://www.gsmarena.com/honor_gt_pro_5g-13810.php"
+    },
+    {
+      "name": "Tablet GT",
+      "url": "https://www.gsmarena.com/honor_tablet_gt-13814.php"
+    },
+    {
+      "name": "X60 GT",
+      "url": "https://www.gsmarena.com/honor_x60_gt_5g-13807.php"
+    },
+    {
+      "name": "Power",
+      "url": "https://www.gsmarena.com/honor_power_5g-13794.php"
+    },
+    {
+      "name": "400 Lite",
+      "url": "https://www.gsmarena.com/honor_400_lite-13742.php"
+    },
+    {
+      "name": "Play 60",
+      "url": "https://www.gsmarena.com/honor_play_60_5g-13803.php"
+    },
+    {
+      "name": "Pad X9a",
+      "url": "https://www.gsmarena.com/honor_pad_x9a-13751.php"
+    },
+    {
+      "name": "Play9A",
+      "url": "https://www.gsmarena.com/honor_play9a-13743.php"
+    },
+    {
+      "name": "Watch 5 Ultra",
+      "url": "https://www.gsmarena.com/honor_watch_5_ultra-13685.php"
+    },
+    {
+      "name": "X8c",
+      "url": "https://www.gsmarena.com/honor_x8c-13621.php"
+    },
+    {
+      "name": "Magic7 Lite",
+      "url": "https://www.gsmarena.com/honor_magic7_lite-13581.php"
+    },
+    {
+      "name": "Magic7 RSR Porsche Design",
+      "url": "https://www.gsmarena.com/honor_magic7_rsr_porsche_design-13588.php"
+    },
+    {
+      "name": "GT",
+      "url": "https://www.gsmarena.com/honor_gt-13569.php"
+    },
+    {
+      "name": "Pad V9",
+      "url": "https://www.gsmarena.com/honor_pad_v9-13568.php"
+    },
+    {
+      "name": "300 Ultra",
+      "url": "https://www.gsmarena.com/honor_300_ultra-13537.php"
+    },
+    {
+      "name": "300 Pro",
+      "url": "https://www.gsmarena.com/honor_300_pro-13538.php"
+    },
+    {
+      "name": "300",
+      "url": "https://www.gsmarena.com/honor_300-13539.php"
+    },
+    {
+      "name": "X9c Smart",
+      "url": "https://www.gsmarena.com/honor_x9c_smart-13536.php"
+    },
+    {
+      "name": "Play9C (China)",
+      "url": "https://www.gsmarena.com/honor_play9c-13493.php"
+    },
+    {
+      "name": "Play9T",
+      "url": "https://www.gsmarena.com/honor_play9t-13494.php"
+    },
+    {
+      "name": "X9c",
+      "url": "https://www.gsmarena.com/honor_x9c-13490.php"
+    },
+    {
+      "name": "Magic7 Pro",
+      "url": "https://www.gsmarena.com/honor_magic7_pro-13480.php"
+    },
+    {
+      "name": "Magic7",
+      "url": "https://www.gsmarena.com/honor_magic7-13481.php"
+    },
+    {
+      "name": "X5b Plus",
+      "url": "https://www.gsmarena.com/honor_x5b_plus-13464.php"
+    },
+    {
+      "name": "X5b",
+      "url": "https://www.gsmarena.com/honor_x5b-13463.php"
+    },
+    {
+      "name": "X7c",
+      "url": "https://www.gsmarena.com/honor_x7c-13416.php"
+    },
+    {
+      "name": "X60 Pro",
+      "url": "https://www.gsmarena.com/honor_x60_pro-13443.php"
+    },
+    {
+      "name": "X60",
+      "url": "https://www.gsmarena.com/honor_x60-13415.php"
+    },
+    {
+      "name": "Pad GT Pro",
+      "url": "https://www.gsmarena.com/honor_pad_gt_pro-13417.php"
+    },
+    {
+      "name": "200 Smart",
+      "url": "https://www.gsmarena.com/honor_200_smart-13281.php"
+    },
+    {
+      "name": "Watch 5",
+      "url": "https://www.gsmarena.com/honor_watch_5-13307.php"
+    },
+    {
+      "name": "Pad X8a",
+      "url": "https://www.gsmarena.com/honor_pad_x8a-13259.php"
+    },
+    {
+      "name": "X60i",
+      "url": "https://www.gsmarena.com/honor_x60i-13208.php"
+    },
+    {
+      "name": "MagicPad 2 12.3",
+      "url": "https://www.gsmarena.com/honor_magicpad_2_12_3-13205.php"
+    },
+    {
+      "name": "Pad 9 Pro",
+      "url": "https://www.gsmarena.com/honor_pad_9_pro-13204.php"
+    },
+    {
+      "name": "Magic Vs3",
+      "url": "https://www.gsmarena.com/honor_magic_vs3-13203.php"
+    },
+    {
+      "name": "Magic V3",
+      "url": "https://www.gsmarena.com/honor_magic_v3-13202.php"
+    },
+    {
+      "name": "Play 60 Plus",
+      "url": "https://www.gsmarena.com/honor_play_60_plus-13161.php"
+    },
+    {
+      "name": "X7b 5G (50 MP)",
+      "url": "https://www.gsmarena.com/honor_x7b_5g_(50_mp)-13154.php"
+    },
+    {
+      "name": "Magic V Flip",
+      "url": "https://www.gsmarena.com/honor_magic_v_flip-13142.php"
+    },
+    {
+      "name": "X6b",
+      "url": "https://www.gsmarena.com/honor_x6b-13143.php"
+    },
+    {
+      "name": "200 Pro",
+      "url": "https://www.gsmarena.com/honor_200_pro-13049.php"
+    }
+  ],
+  "Blackview Tab devices": [
+    {
+      "name": "Mega 3",
+      "url": "https://www.gsmarena.com/blackview_mega_3-13940.php"
+    },
+    {
+      "name": "BL7000",
+      "url": "https://www.gsmarena.com/blackview_bl7000_5g-13849.php"
+    },
+    {
+      "name": "BV7300",
+      "url": "https://www.gsmarena.com/blackview_bv7300-13848.php"
+    },
+    {
+      "name": "Mega 2 WiFi",
+      "url": "https://www.gsmarena.com/blackview_mega_2_wifi-13840.php"
+    },
+    {
+      "name": "Mega 8",
+      "url": "https://www.gsmarena.com/blackview_mega_8-13839.php"
+    },
+    {
+      "name": "BV4800 Pro",
+      "url": "https://www.gsmarena.com/blackview_bv4800_pro-13716.php"
+    },
+    {
+      "name": "Wave 8C",
+      "url": "https://www.gsmarena.com/blackview_wave_8c-13638.php"
+    },
+    {
+      "name": "Wave 8",
+      "url": "https://www.gsmarena.com/blackview_wave_8-13637.php"
+    },
+    {
+      "name": "BV8200",
+      "url": "https://www.gsmarena.com/blackview_bv8200-13636.php"
+    },
+    {
+      "name": "Mega 2",
+      "url": "https://www.gsmarena.com/blackview_mega_2-13635.php"
+    },
+    {
+      "name": "Tab 60 Pro",
+      "url": "https://www.gsmarena.com/blackview_tab_60_pro-13634.php"
+    },
+    {
+      "name": "Tab 60 WiFi",
+      "url": "https://www.gsmarena.com/blackview_tab_60_wifi-13633.php"
+    },
+    {
+      "name": "Active 10 Pro",
+      "url": "https://www.gsmarena.com/blackview_active_10_pro-13566.php"
+    },
+    {
+      "name": "Shark 9",
+      "url": "https://www.gsmarena.com/blackview_shark_9-13453.php"
+    },
+    {
+      "name": "Tab9WiFi",
+      "url": "https://www.gsmarena.com/blackview_tab9wifi-13455.php"
+    },
+    {
+      "name": "Tab90WiFi",
+      "url": "https://www.gsmarena.com/blackview_tab90wifi-13456.php"
+    },
+    {
+      "name": "Hero 10",
+      "url": "https://www.gsmarena.com/blackview_hero_10-13052.php"
+    },
+    {
+      "name": "Tab 16 Pro",
+      "url": "https://www.gsmarena.com/blackview_tab_16_pro-13054.php"
+    },
+    {
+      "name": "BV8100",
+      "url": "https://www.gsmarena.com/blackview_bv8100-13055.php"
+    },
+    {
+      "name": "BL9000 Pro",
+      "url": "https://www.gsmarena.com/blackview_bl9000_pro-12965.php"
+    },
+    {
+      "name": "Color 8",
+      "url": "https://www.gsmarena.com/blackview_color_8-12883.php"
+    },
+    {
+      "name": "Mega 1",
+      "url": "https://www.gsmarena.com/blackview_mega_1-12884.php"
+    },
+    {
+      "name": "BL9000",
+      "url": "https://www.gsmarena.com/blackview_bl9000-12795.php"
+    },
+    {
+      "name": "BL8000",
+      "url": "https://www.gsmarena.com/blackview_bl8000-12794.php"
+    },
+    {
+      "name": "Shark 8",
+      "url": "https://www.gsmarena.com/blackview_shark_8-12680.php"
+    },
+    {
+      "name": "Tab 18",
+      "url": "https://www.gsmarena.com/blackview_tab_18-12682.php"
+    },
+    {
+      "name": "A96",
+      "url": "https://www.gsmarena.com/blackview_a96-12590.php"
+    },
+    {
+      "name": "BV6200 Pro",
+      "url": "https://www.gsmarena.com/blackview_bv6200_pro-12593.php"
+    },
+    {
+      "name": "Tab 80",
+      "url": "https://www.gsmarena.com/blackview_tab_80-12596.php"
+    },
+    {
+      "name": "Tab 60",
+      "url": "https://www.gsmarena.com/blackview_tab_60-12599.php"
+    },
+    {
+      "name": "Tab 70 WiFi",
+      "url": "https://www.gsmarena.com/blackview_tab_70_wifi-12597.php"
+    },
+    {
+      "name": "Tab 50 WiFi",
+      "url": "https://www.gsmarena.com/blackview_tab_50_wifi-12598.php"
+    },
+    {
+      "name": "A200 Pro",
+      "url": "https://www.gsmarena.com/blackview_a200_pro-12469.php"
+    },
+    {
+      "name": "N6000",
+      "url": "https://www.gsmarena.com/blackview_n6000-12432.php"
+    },
+    {
+      "name": "Wave 6C",
+      "url": "https://www.gsmarena.com/blackview_wave_6c-13454.php"
+    },
+    {
+      "name": "Active 8 Pro",
+      "url": "https://www.gsmarena.com/blackview_active_8_pro-12408.php"
+    },
+    {
+      "name": "Tab 12 Pro",
+      "url": "https://www.gsmarena.com/blackview_tab_12_pro-12433.php"
+    },
+    {
+      "name": "BV5300 Pro",
+      "url": "https://www.gsmarena.com/blackview_bv5300_pro-12410.php"
+    },
+    {
+      "name": "Tab 8 WiFi",
+      "url": "https://www.gsmarena.com/blackview_tab_8_wifi-12405.php"
+    },
+    {
+      "name": "BV8900",
+      "url": "https://www.gsmarena.com/blackview_bv8900-12372.php"
+    },
+    {
+      "name": "Tab 11 WiFi",
+      "url": "https://www.gsmarena.com/blackview_tab_11_wifi-12371.php"
+    },
+    {
+      "name": "BV9300",
+      "url": "https://www.gsmarena.com/blackview_bv9300-12266.php"
+    },
+    {
+      "name": "A53 Pro",
+      "url": "https://www.gsmarena.com/blackview_a53_pro-12168.php"
+    },
+    {
+      "name": "A52 Pro",
+      "url": "https://www.gsmarena.com/blackview_a52_pro-13601.php"
+    },
+    {
+      "name": "A53",
+      "url": "https://www.gsmarena.com/blackview_a53-12167.php"
+    },
+    {
+      "name": "Tab 16",
+      "url": "https://www.gsmarena.com/blackview_tab_16-12164.php"
+    },
+    {
+      "name": "Tab 11 SE",
+      "url": "https://www.gsmarena.com/blackview_tab_11_se-12165.php"
+    },
+    {
+      "name": "Tab 5",
+      "url": "https://www.gsmarena.com/blackview_tab_5-12166.php"
+    },
+    {
+      "name": "BV9200",
+      "url": "https://www.gsmarena.com/blackview_bv9200-12055.php"
+    },
+    {
+      "name": "BV5200 Pro",
+      "url": "https://www.gsmarena.com/blackview_bv5200_pro-12056.php"
+    }
+  ],
+  "Huawei devices": [
+    {
+      "name": "MatePad 11.5 (2025)",
+      "url": "https://www.gsmarena.com/huawei_matepad_11_5_(2025)-14008.php"
+    },
+    {
+      "name": "Pura 80 Ultra",
+      "url": "https://www.gsmarena.com/huawei_pura_80_ultra_5g-13944.php"
+    },
+    {
+      "name": "Pura 80 Pro+",
+      "url": "https://www.gsmarena.com/huawei_pura_80_pro+_5g-13945.php"
+    },
+    {
+      "name": "Pura 80 Pro",
+      "url": "https://www.gsmarena.com/huawei_pura_80_pro_5g-13946.php"
+    },
+    {
+      "name": "Pura 80",
+      "url": "https://www.gsmarena.com/huawei_pura_80_5g-13947.php"
+    },
+    {
+      "name": "Nova Y73",
+      "url": "https://www.gsmarena.com/huawei_nova_y73_4g-13827.php"
+    },
+    {
+      "name": "nova 14 Ultra",
+      "url": "https://www.gsmarena.com/huawei_nova_14_ultra_5g-13877.php"
+    },
+    {
+      "name": "nova 14 Pro",
+      "url": "https://www.gsmarena.com/huawei_nova_14_pro_5g-13878.php"
+    },
+    {
+      "name": "nova 14",
+      "url": "https://www.gsmarena.com/huawei_nova_14_5g-13879.php"
+    },
+    {
+      "name": "Watch 5",
+      "url": "https://www.gsmarena.com/huawei_watch_5-13868.php"
+    },
+    {
+      "name": "MatePad Pro 12.2 (2025)",
+      "url": "https://www.gsmarena.com/huawei_matepad_pro_12_2_(2025)-13870.php"
+    },
+    {
+      "name": "Nova Y72S",
+      "url": "https://www.gsmarena.com/huawei_nova_y72s_4g-13846.php"
+    },
+    {
+      "name": "Nova Y63",
+      "url": "https://www.gsmarena.com/huawei_nova_y63_4g-13845.php"
+    },
+    {
+      "name": "Enjoy 80",
+      "url": "https://www.gsmarena.com/huawei_enjoy_80_4g-13809.php"
+    },
+    {
+      "name": "Pura X",
+      "url": "https://www.gsmarena.com/huawei_pura_x-13744.php"
+    },
+    {
+      "name": "Mate XT Ultimate",
+      "url": "https://www.gsmarena.com/huawei_mate_xt_ultimate-13320.php"
+    },
+    {
+      "name": "nova 13i",
+      "url": "https://www.gsmarena.com/huawei_nova_13i-13606.php"
+    },
+    {
+      "name": "Enjoy 70X Energy",
+      "url": "https://www.gsmarena.com/huawei_enjoy_70x_energy_4g-13811.php"
+    },
+    {
+      "name": "Enjoy 70X",
+      "url": "https://www.gsmarena.com/huawei_enjoy_70x-13600.php"
+    },
+    {
+      "name": "Mate 70 RS Ultimate",
+      "url": "https://www.gsmarena.com/huawei_mate_70_rs_ultimate-13520.php"
+    },
+    {
+      "name": "Mate 70 Pro+",
+      "url": "https://www.gsmarena.com/huawei_mate_70_pro+-13517.php"
+    },
+    {
+      "name": "Mate 70 Pro",
+      "url": "https://www.gsmarena.com/huawei_mate_70_pro-13518.php"
+    },
+    {
+      "name": "Mate 70",
+      "url": "https://www.gsmarena.com/huawei_mate_70-13519.php"
+    },
+    {
+      "name": "Mate X6",
+      "url": "https://www.gsmarena.com/huawei_mate_x6-13521.php"
+    },
+    {
+      "name": "MatePad Pro 13.2 (2025)",
+      "url": "https://www.gsmarena.com/huawei_matepad_pro_13_2_(2024)-13523.php"
+    },
+    {
+      "name": "nova 13 Pro",
+      "url": "https://www.gsmarena.com/huawei_nova_13_pro-13465.php"
+    },
+    {
+      "name": "nova 13",
+      "url": "https://www.gsmarena.com/huawei_nova_13-13466.php"
+    },
+    {
+      "name": "Watch GT 5 Pro",
+      "url": "https://www.gsmarena.com/huawei_watch_gt_5_pro-13349.php"
+    },
+    {
+      "name": "Watch GT 5",
+      "url": "https://www.gsmarena.com/huawei_watch_gt_5-13350.php"
+    },
+    {
+      "name": "Watch D2",
+      "url": "https://www.gsmarena.com/huawei_watch_d2-13351.php"
+    },
+    {
+      "name": "MatePad 12 X",
+      "url": "https://www.gsmarena.com/huawei_matepad_12_x-13352.php"
+    },
+    {
+      "name": "MatePad Air (2024)",
+      "url": "https://www.gsmarena.com/huawei_matepad_air_(2024)-13251.php"
+    },
+    {
+      "name": "MatePad Pro 12.2 (2024)",
+      "url": "https://www.gsmarena.com/huawei_matepad_pro_12_2_(2024)-13250.php"
+    },
+    {
+      "name": "nova Flip",
+      "url": "https://www.gsmarena.com/huawei_nova_flip-13248.php"
+    },
+    {
+      "name": "MatePad SE 11",
+      "url": "https://www.gsmarena.com/huawei_matepad_se_11-13135.php"
+    },
+    {
+      "name": "MatePad 11.5 S",
+      "url": "https://www.gsmarena.com/huawei_matepad_11_5_s-12993.php"
+    },
+    {
+      "name": "Pura 70 Ultra",
+      "url": "https://www.gsmarena.com/huawei_pura_70_ultra-12940.php"
+    },
+    {
+      "name": "Pura 70 Pro+",
+      "url": "https://www.gsmarena.com/huawei_pura_70_pro+-12941.php"
+    },
+    {
+      "name": "Pura 70 Pro",
+      "url": "https://www.gsmarena.com/huawei_pura_70_pro-12942.php"
+    },
+    {
+      "name": "Pura 70",
+      "url": "https://www.gsmarena.com/huawei_pura_70-12943.php"
+    },
+    {
+      "name": "nova 12i",
+      "url": "https://www.gsmarena.com/huawei_nova_12i-12882.php"
+    },
+    {
+      "name": "nova 12 SE",
+      "url": "https://www.gsmarena.com/huawei_nova_12_se-12881.php"
+    },
+    {
+      "name": "nova 12s",
+      "url": "https://www.gsmarena.com/huawei_nova_12s-12880.php"
+    },
+    {
+      "name": "Pocket 2",
+      "url": "https://www.gsmarena.com/huawei_pocket_2-12837.php"
+    },
+    {
+      "name": "Enjoy 70z",
+      "url": "https://www.gsmarena.com/huawei_enjoy_70z-12835.php"
+    },
+    {
+      "name": "nova Y72",
+      "url": "https://www.gsmarena.com/huawei_nova_y72-12807.php"
+    },
+    {
+      "name": "nova 12 Ultra",
+      "url": "https://www.gsmarena.com/huawei_nova_12_ultra-12761.php"
+    },
+    {
+      "name": "nova 12 Pro",
+      "url": "https://www.gsmarena.com/huawei_nova_12_pro-12588.php"
+    },
+    {
+      "name": "nova 12",
+      "url": "https://www.gsmarena.com/huawei_nova_12-12589.php"
+    },
+    {
+      "name": "nova 12 Lite",
+      "url": "https://www.gsmarena.com/huawei_nova_12_lite-12762.php"
+    }
+  ],
+  "apple devices": [
+    {
+      "name": "iPad Air 13 (2025)",
+      "url": "https://www.gsmarena.com/apple_ipad_air_13_(2025)-13704.php"
+    },
+    {
+      "name": "iPad Air 11 (2025)",
+      "url": "https://www.gsmarena.com/apple_ipad_air_11_(2025)-13703.php"
+    },
+    {
+      "name": "iPad (2025)",
+      "url": "https://www.gsmarena.com/apple_ipad_(2025)-13702.php"
+    },
+    {
+      "name": "iPhone 16e",
+      "url": "https://www.gsmarena.com/apple_iphone_16e-13395.php"
+    },
+    {
+      "name": "iPad mini (2024)",
+      "url": "https://www.gsmarena.com/apple_ipad_mini_(2024)-13437.php"
+    },
+    {
+      "name": "iPhone 16 Pro Max",
+      "url": "https://www.gsmarena.com/apple_iphone_16_pro_max-13123.php"
+    },
+    {
+      "name": "iPhone 16 Pro",
+      "url": "https://www.gsmarena.com/apple_iphone_16_pro-13315.php"
+    },
+    {
+      "name": "iPhone 16 Plus",
+      "url": "https://www.gsmarena.com/apple_iphone_16_plus-13316.php"
+    },
+    {
+      "name": "iPhone 16",
+      "url": "https://www.gsmarena.com/apple_iphone_16-13317.php"
+    },
+    {
+      "name": "Watch Series 10",
+      "url": "https://www.gsmarena.com/apple_watch_series_10-13318.php"
+    },
+    {
+      "name": "Watch Series 10 Aluminum",
+      "url": "https://www.gsmarena.com/apple_watch_series_10_aluminum-13319.php"
+    },
+    {
+      "name": "iPad Pro 13 (2024)",
+      "url": "https://www.gsmarena.com/apple_ipad_pro_13_(2024)-12987.php"
+    },
+    {
+      "name": "iPad Pro 11 (2024)",
+      "url": "https://www.gsmarena.com/apple_ipad_pro_11_(2024)-12986.php"
+    },
+    {
+      "name": "iPad Air 13 (2024)",
+      "url": "https://www.gsmarena.com/apple_ipad_air_13_(2024)-12985.php"
+    },
+    {
+      "name": "iPad Air 11 (2024)",
+      "url": "https://www.gsmarena.com/apple_ipad_air_11_(2024)-12984.php"
+    },
+    {
+      "name": "iPhone 15 Pro Max",
+      "url": "https://www.gsmarena.com/apple_iphone_15_pro_max-12548.php"
+    },
+    {
+      "name": "iPhone 15 Pro",
+      "url": "https://www.gsmarena.com/apple_iphone_15_pro-12557.php"
+    },
+    {
+      "name": "iPhone 15 Plus",
+      "url": "https://www.gsmarena.com/apple_iphone_15_plus-12558.php"
+    },
+    {
+      "name": "iPhone 15",
+      "url": "https://www.gsmarena.com/apple_iphone_15-12559.php"
+    },
+    {
+      "name": "Watch Ultra 2",
+      "url": "https://www.gsmarena.com/apple_watch_ultra_2-12560.php"
+    },
+    {
+      "name": "Watch Series 9",
+      "url": "https://www.gsmarena.com/apple_watch_series_9-12561.php"
+    },
+    {
+      "name": "Watch Series 9 Aluminum",
+      "url": "https://www.gsmarena.com/apple_watch_series_9_aluminum-12562.php"
+    },
+    {
+      "name": "iPad Pro 12.9 (2022)",
+      "url": "https://www.gsmarena.com/apple_ipad_pro_12_9_(2022)-11939.php"
+    },
+    {
+      "name": "iPad Pro 11 (2022)",
+      "url": "https://www.gsmarena.com/apple_ipad_pro_11_(2022)-11940.php"
+    },
+    {
+      "name": "iPad (2022)",
+      "url": "https://www.gsmarena.com/apple_ipad_(2022)-11941.php"
+    },
+    {
+      "name": "iPhone 14 Pro Max",
+      "url": "https://www.gsmarena.com/apple_iphone_14_pro_max-11773.php"
+    },
+    {
+      "name": "iPhone 14 Pro",
+      "url": "https://www.gsmarena.com/apple_iphone_14_pro-11860.php"
+    },
+    {
+      "name": "iPhone 14 Plus",
+      "url": "https://www.gsmarena.com/apple_iphone_14_plus-11862.php"
+    },
+    {
+      "name": "iPhone 14",
+      "url": "https://www.gsmarena.com/apple_iphone_14-11861.php"
+    },
+    {
+      "name": "Watch Ultra",
+      "url": "https://www.gsmarena.com/apple_watch_ultra-11827.php"
+    },
+    {
+      "name": "Watch Series 8",
+      "url": "https://www.gsmarena.com/apple_watch_series_8-11866.php"
+    },
+    {
+      "name": "Watch Series 8 Aluminum",
+      "url": "https://www.gsmarena.com/apple_watch_series_8_aluminum-11864.php"
+    },
+    {
+      "name": "Watch SE (2022)",
+      "url": "https://www.gsmarena.com/apple_watch_se_(2022)-11865.php"
+    },
+    {
+      "name": "iPhone SE (2022)",
+      "url": "https://www.gsmarena.com/apple_iphone_se_(2022)-11410.php"
+    },
+    {
+      "name": "iPad Air (2022)",
+      "url": "https://www.gsmarena.com/apple_ipad_air_(2022)-11411.php"
+    },
+    {
+      "name": "iPhone 13 Pro Max",
+      "url": "https://www.gsmarena.com/apple_iphone_13_pro_max-11089.php"
+    },
+    {
+      "name": "iPhone 13 Pro",
+      "url": "https://www.gsmarena.com/apple_iphone_13_pro-11102.php"
+    },
+    {
+      "name": "iPhone 13",
+      "url": "https://www.gsmarena.com/apple_iphone_13-11103.php"
+    },
+    {
+      "name": "iPhone 13 mini",
+      "url": "https://www.gsmarena.com/apple_iphone_13_mini-11104.php"
+    },
+    {
+      "name": "iPad mini (2021)",
+      "url": "https://www.gsmarena.com/apple_ipad_mini_(2021)-11105.php"
+    },
+    {
+      "name": "iPad 10.2 (2021)",
+      "url": "https://www.gsmarena.com/apple_ipad_10_2_(2021)-11106.php"
+    },
+    {
+      "name": "Watch Edition Series 7",
+      "url": "https://www.gsmarena.com/apple_watch_edition_series_7-11147.php"
+    },
+    {
+      "name": "Watch Series 7",
+      "url": "https://www.gsmarena.com/apple_watch_series_7-11146.php"
+    },
+    {
+      "name": "Watch Series 7 Aluminum",
+      "url": "https://www.gsmarena.com/apple_watch_series_7_aluminum-11107.php"
+    },
+    {
+      "name": "iPad Pro 12.9 (2021)",
+      "url": "https://www.gsmarena.com/apple_ipad_pro_12_9_(2021)-10864.php"
+    },
+    {
+      "name": "iPad Pro 11 (2021)",
+      "url": "https://www.gsmarena.com/apple_ipad_pro_11_(2021)-10865.php"
+    },
+    {
+      "name": "iPhone 12 Pro Max",
+      "url": "https://www.gsmarena.com/apple_iphone_12_pro_max-10237.php"
+    },
+    {
+      "name": "iPhone 12 Pro",
+      "url": "https://www.gsmarena.com/apple_iphone_12_pro-10508.php"
+    },
+    {
+      "name": "iPhone 12",
+      "url": "https://www.gsmarena.com/apple_iphone_12-10509.php"
+    },
+    {
+      "name": "iPhone 12 mini",
+      "url": "https://www.gsmarena.com/apple_iphone_12_mini-10510.php"
+    }
+  ]
+}
