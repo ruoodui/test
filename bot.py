@@ -1,11 +1,9 @@
 import os
 import pandas as pd
 import json
-import io
-import csv
 from thefuzz import process
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
     ConversationHandler, filters, ContextTypes
@@ -18,7 +16,7 @@ URLS_PATH = os.path.join(BASE_DIR, "phones_urls.json")
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 TOKEN = os.getenv("TOKEN")
 CHANNEL_USERNAME = "@mitech808"
-ADMIN_IDS = [193646746]  # استبدل بمعرف المشرف الخاص بك
+ADMIN_IDS = [193646746]
 
 # ======= دوال إدارة المستخدمين =======
 def load_users():
@@ -45,14 +43,14 @@ def store_user(user):
 # ======= تحميل بيانات الأسعار =======
 def load_excel_prices(path=PRICES_PATH):
     df = pd.read_excel(path)
-    df = df.dropna(subset=["الاسم (name)", "السعر (price)", "الماركه ( Brand )", "المتجر", "العنوان"])
+    df = df.dropna(subset=["الاسم (name)", "السعر (price)"])
     phone_map = {}
     for _, row in df.iterrows():
         name = str(row["الاسم (name)"]).strip()
         price = str(row["السعر (price)"]).strip()
-        brand = str(row["الماركه ( Brand )"]).strip()
-        store = str(row["المتجر"]).strip()
-        address = str(row["العنوان"]).strip()
+        brand = str(row.get("الماركه ( Brand )", "")).strip()
+        store = str(row.get("المتجر", "")).strip()
+        address = str(row.get("العنوان", "")).strip()
         phone_map.setdefault(name, []).append({
             "price": price,
             "brand": brand,
@@ -119,75 +117,33 @@ async def send_subscription_required(update: Update):
         reply_markup=keyboard
     )
 
-# ======= مقارنة =======
-COMPARE_FIRST, COMPARE_SECOND = range(2)
+# ======= التعامل مع الضغط على زر المواصفات =======
+async def show_specs_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if not await check_user_subscription(user_id, context):
-        return await send_subscription_required(update)
+    phone_name = query.data.replace("show_specs_", "", 1)
+    specs_list = price_data.get(phone_name)
 
-    store_user(update.effective_user)
-    await update.message.reply_text(WELCOME_MSG)
+    if not specs_list:
+        await query.edit_message_text("❌ لم أتمكن من العثور على مواصفات لهذا الجهاز.")
+        return
 
-async def compare_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await check_user_subscription(update.effective_user.id, context):
-        return await send_subscription_required(update)
-    await update.message.reply_text("📱 أرسل اسم الجهاز الأول للمقارنة:")
-    return COMPARE_FIRST
+    msg = f"📱 مواصفات {phone_name}:\n\n"
+    for spec in specs_list:
+        msg += f"💰 السعر: {spec['price']}\n"
+        if spec['brand']:
+            msg += f"🏷️ الماركة: {spec['brand']}\n"
+        if spec['store']:
+            msg += f"🏪 المتجر: {spec['store']}\n"
+        if spec['address']:
+            msg += f"📍 العنوان: {spec['address']}\n"
+        msg += f"🔗 رابط المواصفات: {fuzzy_get_url(phone_name)}\n"
+        msg += "----------------------\n"
 
-async def compare_first(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['compare_first'] = update.message.text.strip()
-    await update.message.reply_text("📱 الآن أرسل اسم الجهاز الثاني للمقارنة:")
-    return COMPARE_SECOND
+    await query.edit_message_text(msg)
 
-async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    first_name = context.user_data.get('compare_first')
-    second_name = update.message.text.strip()
-
-    def best_match(name):
-        matches = process.extract(name, price_data.keys(), limit=1)
-        if matches and matches[0][1] >= 95:
-            return matches[0][0]
-        return None
-
-    first = best_match(first_name)
-    second = best_match(second_name)
-
-    if not first or not second:
-        await update.message.reply_text("❌ لم أتمكن من العثور على أحد الأجهزة. حاول كتابة الأسماء بشكل أدق.")
-        return ConversationHandler.END
-
-    msg = f"⚖️ مقارنة بين:\n\n"
-
-    msg += f"📱 {first}:\n"
-    for spec in price_data[first]:
-        msg += (
-            f"🏷️ الماركة: {spec['brand']}\n"
-            f"💰 {spec['price']}\n"
-            f"🏪 المتجر: {spec['store']}\n"
-            f"📍 العنوان: {spec['address']}\n\n"
-        )
-    msg += f"🔗 {fuzzy_get_url(first)}\n\n"
-
-    msg += f"📱 {second}:\n"
-    for spec in price_data[second]:
-        msg += (
-            f"🏷️ الماركة: {spec['brand']}\n"
-            f"💰 {spec['price']}\n"
-            f"🏪 المتجر: {spec['store']}\n"
-            f"📍 العنوان: {spec['address']}\n\n"
-        )
-    msg += f"🔗 {fuzzy_get_url(second)}\n"
-
-    await update.message.reply_text(msg)
-    return ConversationHandler.END
-
-async def compare_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ تم إلغاء عملية المقارنة.")
-    return ConversationHandler.END
-
-# ======= الرسائل العامة مع أزرار اقتراح الأجهزة =======
+# ======= التعامل مع الرسائل العامة =======
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_user_subscription(user_id, context):
@@ -208,15 +164,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 try:
                     price = int(str(spec['price']).replace(',', '').replace('٬', ''))
                     if min_price <= price <= max_price:
-                        msg = (
-                            f"📱 {name}\n"
-                            f"🏷️ الماركة: {spec['brand']}\n"
-                            f"💰 السعر: {spec['price']}\n"
-                            f"🏪 المتجر: {spec['store']}\n"
-                            f"📍 العنوان: {spec['address']}"
-                        )
+                        msg = f"📱 {name}\n💰 {spec['price']}"
                         keyboard = InlineKeyboardMarkup([
-                            [InlineKeyboardButton("📎 المواصفات", callback_data=f"show_specs::{name}")]
+                            [InlineKeyboardButton("📎 المواصفات", callback_data=f"show_specs_{name}")]
                         ])
                         await update.message.reply_text(msg, reply_markup=keyboard)
                 except:
@@ -229,11 +179,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not good_matches:
         suggestions = [m[0] for m in matches if m[1] >= 70]
         if suggestions:
-            buttons = [
-                [InlineKeyboardButton(s, callback_data=f"select_phone::{s}")]
-                for s in suggestions
-            ]
-            keyboard = InlineKeyboardMarkup(buttons)
+            keyboard = InlineKeyboardMarkup(
+                [[InlineKeyboardButton(s, callback_data=f"show_specs_{s}")] for s in suggestions]
+            )
             await update.message.reply_text(
                 "❌ لم أجد جهازًا مطابقًا بدقة.\n\nهل تقصد أحد هذه الأجهزة؟",
                 reply_markup=keyboard
@@ -244,81 +192,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for name, _ in good_matches:
         for spec in price_data[name]:
-            msg = (
-                f"📱 {name}\n"
-                f"🏷️ الماركة: {spec['brand']}\n"
-                f"💰 السعر: {spec['price']}\n"
-                f"🏪 المتجر: {spec['store']}\n"
-                f"📍 العنوان: {spec['address']}"
-            )
+            msg = f"📱 {name}\n💰 {spec['price']}"
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("📎 المواصفات", callback_data=f"show_specs::{name}")]
+                [InlineKeyboardButton("📎 المواصفات", callback_data=f"show_specs_{name}")]
             ])
             await update.message.reply_text(msg, reply_markup=keyboard)
 
-# ======= هاندلر الضغط على زر اختيار الجهاز من الاقتراحات =======
-async def select_phone_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-    if not data.startswith("select_phone::"):
-        return
-
-    phone_name = data.split("::", 1)[1]
-
-    if phone_name not in price_data:
-        await query.edit_message_text("❌ الجهاز غير موجود حالياً.")
-        return
-
-    msg = ""
-    for spec in price_data[phone_name]:
-        msg += (
-            f"📱 {phone_name}\n"
-            f"🏷️ الماركة: {spec['brand']}\n"
-            f"💰 السعر: {spec['price']}\n"
-            f"🏪 المتجر: {spec['store']}\n"
-            f"📍 العنوان: {spec['address']}\n\n"
-            f"🔗 {fuzzy_get_url(phone_name)}\n\n"
-        )
-
-    await query.edit_message_text(msg)
-
-# ======= هاندلر زر "عرض المواصفات" =======
-async def show_specs_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-    if not data.startswith("show_specs::"):
-        return
-
-    phone_name = data.split("::", 1)[1]
-
-    if phone_name not in price_data:
-        await query.edit_message_text("❌ الجهاز غير موجود.")
-        return
-
-    msg = f"📱 مواصفات {phone_name}:\n\n"
-    for spec in price_data[phone_name]:
-        msg += (
-            f"🏷️ الماركة: {spec['brand']}\n"
-            f"💰 السعر: {spec['price']}\n"
-            f"🏪 المتجر: {spec['store']}\n"
-            f"📍 العنوان: {spec['address']}\n\n"
-        )
-
-    await query.message.reply_text(msg)
-
-async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    if await check_user_subscription(query.from_user.id, context):
-        await query.edit_message_text("✅ تم التحقق! يمكنك الآن استخدام البوت.\n\n" + WELCOME_MSG)
-    else:
-        await query.answer("❌ لم يتم العثور على اشتراكك بعد. تأكد من الاشتراك ثم أعد المحاولة.", show_alert=True)
-
-# ======= أمر المشرف /stats مع زر تحميل CSV =======
+# ======= أمر المشرف /stats =======
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id not in ADMIN_IDS:
@@ -331,61 +211,64 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     msg = f"👥 عدد مستخدمي البوت: {len(users)}"
-
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📥 تحميل ملف المستخدمين (CSV)", callback_data="download_users_csv")]
+        [InlineKeyboardButton("⬇️ تصدير المستخدمين (CSV)", callback_data="export_users_csv")]
     ])
-
     await update.message.reply_text(msg, reply_markup=keyboard)
 
-async def send_users_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ======= تصدير المستخدمين CSV =======
+async def export_users_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
-    user_id = query.from_user.id
-    if user_id not in ADMIN_IDS:
-        await query.answer("❌ هذا الأمر مخصص للمشرف فقط.", show_alert=True)
-        return
 
     users = load_users()
     if not users:
         await query.edit_message_text("❌ لا يوجد مستخدمون مسجلون بعد.")
         return
 
-    output = io.StringIO()
+    import csv
+    from io import StringIO
+
+    output = StringIO()
     writer = csv.writer(output)
     writer.writerow(["id", "name", "username"])
     for user in users.values():
-        writer.writerow([user["id"], user["name"], user.get("username") or ""])
-
+        writer.writerow([user['id'], user['name'], user['username'] or ""])
     output.seek(0)
-    csv_bytes = io.BytesIO(output.getvalue().encode('utf-8'))
 
-    await query.message.reply_document(
-        document=InputFile(csv_bytes, filename="users.csv"),
-        caption="📂 ملف المستخدمين"
+    await context.bot.send_document(
+        chat_id=query.from_user.id,
+        document=output,
+        filename="users.csv",
+        caption="📋 ملف المستخدمين"
     )
+
+    await query.edit_message_text("✅ تم إرسال ملف المستخدمين.")
+
+# ======= زر التحقق من الاشتراك =======
+async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if await check_user_subscription(query.from_user.id, context):
+        await query.edit_message_text("✅ تم التحقق! يمكنك الآن استخدام البوت.\n\n" + WELCOME_MSG)
+    else:
+        await query.answer("❌ لم يتم العثور على اشتراكك بعد. تأكد من الاشتراك ثم أعد المحاولة.", show_alert=True)
 
 # ======= تشغيل البوت =======
 def main():
     app = Application.builder().token(TOKEN).build()
 
     compare_conv = ConversationHandler(
-        entry_points=[CommandHandler("compare", compare_start)],
-        states={
-            COMPARE_FIRST: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_first)],
-            COMPARE_SECOND: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_second)],
-        },
-        fallbacks=[CommandHandler("cancel", compare_cancel)],
-        allow_reentry=True
+        entry_points=[CommandHandler("compare", lambda u,c: u.message.reply_text("مقارنة قيد التطوير..."))],
+        states={},
+        fallbacks=[]
     )
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
-    app.add_handler(CallbackQueryHandler(send_users_csv, pattern="^download_users_csv$"))
-    app.add_handler(CallbackQueryHandler(select_phone_callback, pattern=r"^select_phone::"))
-    app.add_handler(CallbackQueryHandler(show_specs_callback, pattern=r"^show_specs::"))
+    app.add_handler(CallbackQueryHandler(show_specs_callback, pattern="^show_specs_"))
+    app.add_handler(CallbackQueryHandler(export_users_csv, pattern="^export_users_csv$"))
     app.add_handler(compare_conv)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
