@@ -165,7 +165,7 @@ async def compare_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء عملية المقارنة.")
     return ConversationHandler.END
 
-# ======= الرسائل العامة مع أزرار اقتراح الأجهزة =======
+# ======= الرسائل العامة =======
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_user_subscription(user_id, context):
@@ -201,14 +201,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not good_matches:
         suggestions = [m[0] for m in matches if m[1] >= 70]
         if suggestions:
-            buttons = [
-                [InlineKeyboardButton(s, callback_data=f"select_phone::{s}")]
-                for s in suggestions
-            ]
-            keyboard = InlineKeyboardMarkup(buttons)
+            suggestion_text = "\n".join(f"🔹 {s}" for s in suggestions)
             await update.message.reply_text(
-                "❌ لم أجد جهازًا مطابقًا بدقة.\n\nهل تقصد أحد هذه الأجهزة؟",
-                reply_markup=keyboard
+                f"❌ لم أجد جهازًا مطابقًا بدقة.\n\nهل تقصد أحد هذه الأجهزة؟\n\n{suggestion_text}"
             )
         else:
             await update.message.reply_text("❌ لم أجد جهازًا مشابهًا. حاول كتابة الاسم بشكل أدق.")
@@ -221,27 +216,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("📎 المواصفات", url=fuzzy_get_url(name))]
             ])
             await update.message.reply_text(msg, reply_markup=keyboard)
-
-# ======= هاندلر الضغط على زر اختيار الجهاز من الاقتراحات =======
-async def select_phone_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data  # شكلها "select_phone::اسم الجهاز"
-    if not data.startswith("select_phone::"):
-        return
-
-    phone_name = data.split("::", 1)[1]
-
-    if phone_name not in price_data:
-        await query.edit_message_text("❌ الجهاز غير موجود حالياً.")
-        return
-
-    msg = ""
-    for spec in price_data[phone_name]:
-        msg += f"📱 {phone_name}\n💾 {spec['rom']} — 💰 {spec['price']}\n🔗 {fuzzy_get_url(phone_name)}\n\n"
-
-    await query.edit_message_text(msg)
 
 async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -265,12 +239,14 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = f"👥 عدد مستخدمي البوت: {len(users)}"
 
+    # زر لتنزيل CSV
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📥 تحميل ملف المستخدمين (CSV)", callback_data="download_users_csv")]
     ])
 
     await update.message.reply_text(msg, reply_markup=keyboard)
 
+# هاندلر زر تحميل ملف CSV
 async def send_users_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -314,10 +290,9 @@ def main():
     )
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("stats", stats_command))  # أمر المشرف مع زر تحميل CSV
     app.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
-    app.add_handler(CallbackQueryHandler(send_users_csv, pattern="^download_users_csv$"))
-    app.add_handler(CallbackQueryHandler(select_phone_callback, pattern=r"^select_phone::"))
+    app.add_handler(CallbackQueryHandler(send_users_csv, pattern="^download_users_csv$"))  # هاندلر زر CSV
     app.add_handler(compare_conv)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
