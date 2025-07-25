@@ -204,7 +204,7 @@ async def device_option_callback(update: Update, context: ContextTypes.DEFAULT_T
     ])
     await query.edit_message_text(msg, reply_markup=keyboard)
 
-# ======= الرسائل العامة مع تعديل عرض اقتراحات البحث =======
+# ======= الرسائل العامة مع تعديل عرض اقتراحات البحث ودعم بحث الماركة =======
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_user_subscription(user_id, context):
@@ -237,6 +237,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         break
                 except ValueError:
                     continue
+        return
+
+    # البحث حسب الماركة أولاً
+    first_word = text.split()[0].lower()
+    brand_matches = [name for name in price_data.keys() if name.lower().startswith(first_word)]
+
+    if len(brand_matches) > 1:
+        buttons = [
+            [InlineKeyboardButton(f"🔹 {name}", callback_data=f"device_{name}")]
+            for name in brand_matches
+        ]
+        keyboard = InlineKeyboardMarkup(buttons)
+        await update.message.reply_text(
+            f"📱 أجهزة الماركة '{first_word.capitalize()}' المتوفرة:\n"
+            "اختر الجهاز لعرض تفاصيله:",
+            reply_markup=keyboard
+        )
         return
 
     matches = process.extract(text, price_data.keys(), limit=5)
