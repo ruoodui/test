@@ -12,7 +12,7 @@ from telegram.ext import (
 )
 
 # ======= إعدادات =======
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # ✅ مسار ديناميكي
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PRICES_PATH = os.path.join(BASE_DIR, "prices.xlsx")
 URLS_PATH = os.path.join(BASE_DIR, "phones_urls.json")
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
@@ -45,13 +45,20 @@ def store_user(user):
 # ======= تحميل بيانات الأسعار =======
 def load_excel_prices(path=PRICES_PATH):
     df = pd.read_excel(path)
-    df = df.dropna(subset=["الاسم (name)", "السعر (price)", "الذاكره (Rom)"])
+    df = df.dropna(subset=["الاسم (name)", "السعر (price)"])
     phone_map = {}
     for _, row in df.iterrows():
         name = str(row["الاسم (name)"]).strip()
         price = str(row["السعر (price)"]).strip()
-        rom = str(row["الذاكره (Rom)"]).strip()
-        phone_map.setdefault(name, []).append({"price": price, "rom": rom})
+        brand = str(row.get("الماركه ( Brand )", "")).strip()
+        store = str(row.get("المتجر", "")).strip()
+        address = str(row.get("العنوان", "")).strip()
+        phone_map.setdefault(name, []).append({
+            "price": price,
+            "brand": brand,
+            "store": store,
+            "address": address
+        })
     return phone_map
 
 # ======= تحميل روابط المواصفات =======
@@ -82,10 +89,10 @@ def fuzzy_get_url(name):
 
 # ======= رسالة ترحيب =======
 WELCOME_MSG = (
-    "👋 مرحبًا بك في بوت أسعار الموبايلات!\n\n"
-    "📱 أرسل اسم الجهاز (مثال: Galaxy S25 Ultra)\n"
-    "💰 أو أرسل السعر (مثال: 1300000) للبحث عن أجهزة في هذا النطاق.\n"
-    "🔄 استخدم الأمر /compare لمقارنة جهازين."
+    "\U0001F44B مرحبًا بك في بوت أسعار الموبايلات!\n\n"
+    "\U0001F4F1 أرسل اسم الجهاز (مثال: Galaxy S25 Ultra)\n"
+    "\U0001F4B0 أو أرسل السعر (مثال: 1300000) للبحث عن أجهزة في هذا النطاق.\n"
+    "\U0001F504 استخدم الأمر /compare لمقارنة جهازين."
 )
 
 # ======= التحقق من الاشتراك =======
@@ -120,7 +127,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_user_subscription(user_id, context):
         return await send_subscription_required(update)
 
-    store_user(update.effective_user)  # حفظ المستخدم
+    store_user(update.effective_user)
     await update.message.reply_text(WELCOME_MSG)
 
 async def compare_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -154,16 +161,40 @@ async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = f"⚖️ مقارنة بين:\n\n"
     msg += f"📱 {first}:\n"
     for spec in price_data[first]:
-        msg += f"💾 {spec['rom']} — 💰 {spec['price']}\n🔗 {fuzzy_get_url(first)}\n"
+        msg += (
+            f"💰 السعر: {spec['price']}\n"
+            f"🏬 المتجر: {spec['store']}\n"
+            f"📍 العنوان: {spec['address']}\n"
+            f"🏷️ الماركة: {spec['brand']}\n\n"
+        )
+
     msg += f"\n📱 {second}:\n"
     for spec in price_data[second]:
-        msg += f"💾 {spec['rom']} — 💰 {spec['price']}\n🔗 {fuzzy_get_url(second)}\n"
+        msg += (
+            f"💰 السعر: {spec['price']}\n"
+            f"🏬 المتجر: {spec['store']}\n"
+            f"📍 العنوان: {spec['address']}\n"
+            f"🏷️ الماركة: {spec['brand']}\n\n"
+        )
+
     await update.message.reply_text(msg)
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(f"📎 مواصفات {first}", url=fuzzy_get_url(first))],
+        [InlineKeyboardButton(f"📎 مواصفات {second}", url=fuzzy_get_url(second))],
+        [InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="back_to_menu")]
+    ])
+    await update.message.reply_text("🔗 روابط المواصفات:", reply_markup=keyboard)
     return ConversationHandler.END
 
 async def compare_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء عملية المقارنة.")
     return ConversationHandler.END
+
+# ======= زر الرجوع للقائمة =======
+async def back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.message.reply_text(WELCOME_MSG)
 
 # ======= الرسائل العامة =======
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -171,7 +202,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_user_subscription(user_id, context):
         return await send_subscription_required(update)
 
-    store_user(update.effective_user)  # حفظ المستخدم
+    store_user(update.effective_user)
 
     text = update.message.text.strip()
 
@@ -186,9 +217,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 try:
                     price = int(str(spec['price']).replace(',', '').replace('٬', ''))
                     if min_price <= price <= max_price:
-                        msg = f"📱 {name}\n💾 {spec['rom']} — 💰 {spec['price']}"
+                        msg = (
+                            f"📱 {name}\n"
+                            f"💰 السعر: {spec['price']}\n"
+                            f"🏬 المتجر: {spec['store']}\n"
+                            f"📍 العنوان: {spec['address']}\n"
+                            f"🏷️ الماركة: {spec['brand']}"
+                        )
                         keyboard = InlineKeyboardMarkup([
-                            [InlineKeyboardButton("📎 المواصفات", url=fuzzy_get_url(name))]
+                            [InlineKeyboardButton("📎 رابط المواصفات", url=fuzzy_get_url(name))],
+                            [InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="back_to_menu")]
                         ])
                         await update.message.reply_text(msg, reply_markup=keyboard)
                 except:
@@ -211,12 +249,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for name, _ in good_matches:
         for spec in price_data[name]:
-            msg = f"📱 {name}\n💾 {spec['rom']} — 💰 {spec['price']}"
+            msg = (
+                f"📱 {name}\n"
+                f"💰 السعر: {spec['price']}\n"
+                f"🏬 المتجر: {spec['store']}\n"
+                f"📍 العنوان: {spec['address']}\n"
+                f"🏷️ الماركة: {spec['brand']}"
+            )
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("📎 المواصفات", url=fuzzy_get_url(name))]
+                [InlineKeyboardButton("📎 رابط المواصفات", url=fuzzy_get_url(name))],
+                [InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="back_to_menu")]
             ])
             await update.message.reply_text(msg, reply_markup=keyboard)
 
+# ======= التحقق من الاشتراك مرة أخرى =======
 async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -238,19 +284,14 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     msg = f"👥 عدد مستخدمي البوت: {len(users)}"
-
-    # زر لتنزيل CSV
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📥 تحميل ملف المستخدمين (CSV)", callback_data="download_users_csv")]
     ])
-
     await update.message.reply_text(msg, reply_markup=keyboard)
 
-# هاندلر زر تحميل ملف CSV
 async def send_users_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     user_id = query.from_user.id
     if user_id not in ADMIN_IDS:
         await query.answer("❌ هذا الأمر مخصص للمشرف فقط.", show_alert=True)
@@ -290,9 +331,10 @@ def main():
     )
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("stats", stats_command))  # أمر المشرف مع زر تحميل CSV
+    app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
-    app.add_handler(CallbackQueryHandler(send_users_csv, pattern="^download_users_csv$"))  # هاندلر زر CSV
+    app.add_handler(CallbackQueryHandler(send_users_csv, pattern="^download_users_csv$"))
+    app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_to_menu$"))
     app.add_handler(compare_conv)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
