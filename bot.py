@@ -1,11 +1,9 @@
 import os
 import pandas as pd
 import json
-import io
-import csv
 from thefuzz import process
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
     ConversationHandler, filters, ContextTypes
@@ -14,238 +12,121 @@ from telegram.ext import (
 # ======= إعدادات =======
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PRICES_PATH = os.path.join(BASE_DIR, "prices.xlsx")
-URLS_PATH = os.path.join(BASE_DIR, "phones_urls.json")
-USERS_FILE = os.path.join(BASE_DIR, "users.json")
-TOKEN = os.getenv("TOKEN")
-CHANNEL_USERNAME = "@mitech808"
-ADMIN_IDS = [193646746]  # <-- استبدل بمعرف المشرف الخاص بك
+URLS_PATH = os.path.join(BASE_DIR, "urls.json")
+USERS_PATH = os.path.join(BASE_DIR, "users.csv")
 
-# ======= دوال إدارة المستخدمين =======
-def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, "r", encoding="utf-8") as f:
+# ========== الترحيب ==========
+WELCOME_MSG = """📱 أهلاً بك في بوت أسعار الهواتف
+
+🔍 أرسل اسم الجهاز للبحث عن سعره.
+📊 أو أرسل اسمين للمقارنة بين جهازين.
+💡 مثال: iPhone 13 Pro Max
+💡 مثال للمقارنة: S23 Ultra vs iPhone 15 Pro Max
+"""
+
+# ========== تحميل البيانات ==========
+def load_prices():
+    df = pd.read_excel(PRICES_PATH)
+    df.fillna("", inplace=True)
+    return df
+
+def load_urls():
+    if os.path.exists(URLS_PATH):
+        with open(URLS_PATH, "r") as f:
             return json.load(f)
     return {}
 
-def save_users(users):
-    with open(USERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, indent=2, ensure_ascii=False)
+# ========== حفظ المستخدمين ==========
+def save_user(user_id):
+    if not os.path.exists(USERS_PATH):
+        with open(USERS_PATH, "w") as f:
+            f.write("user_id\n")
+    with open(USERS_PATH, "r") as f:
+        existing = f.read().splitlines()
+    if str(user_id) not in existing:
+        with open(USERS_PATH, "a") as f:
+            f.write(f"{user_id}\n")
 
-def store_user(user):
-    users = load_users()
-    user_id = str(user.id)
-    if user_id not in users:
-        users[user_id] = {
-            "name": user.full_name,
-            "username": user.username,
-            "id": user.id
-        }
-        save_users(users)
+def get_user_count():
+    if os.path.exists(USERS_PATH):
+        with open(USERS_PATH, "r") as f:
+            return len(f.read().splitlines()) - 1
+    return 0
 
-# ======= تحميل بيانات الأسعار =======
-def load_excel_prices(path=PRICES_PATH):
-    df = pd.read_excel(path)
-    df = df.dropna(subset=["الاسم (name)", "السعر (price)"])
-    phone_map = {}
-    for _, row in df.iterrows():
-        name = str(row["الاسم (name)"]).strip()
-        price = str(row["السعر (price)"]).strip()
-        brand = str(row.get("الماركه ( Brand )", "")).strip()
-        store = str(row.get("المتجر", "")).strip()
-        address = str(row.get("العنوان", "")).strip()
-        phone_map.setdefault(name, []).append({
-            "price": price,
-            "brand": brand,
-            "store": store,
-            "address": address
-        })
-    return phone_map
-
-# ======= تحميل روابط المواصفات =======
-def load_phone_urls(filepath=URLS_PATH):
-    with open(filepath, encoding="utf-8") as f:
-        data = json.load(f)
-    url_map = {}
-    for brand_devices in data.values():
-        for phone in brand_devices:
-            name = phone.get("name")
-            url = phone.get("url", "🔗 غير متوفر")
-            if name:
-                url_map[name.strip()] = url
-    return url_map
-
-# ======= البيانات =======
-price_data = load_excel_prices()
-phone_urls = load_phone_urls()
-
-# ======= مطابقة غامضة للروابط =======
+# ========== استرجاع الرابط ==========
 def fuzzy_get_url(name):
-    if name in phone_urls:
-        return phone_urls[name]
-    matches = process.extract(name, phone_urls.keys(), limit=1)
-    if matches and matches[0][1] >= 80:
-        return phone_urls[matches[0][0]]
-    return "https://t.me/mitech808"
+    urls = load_urls()
+    best_match, score = process.extractOne(name, urls.keys())
+    if score >= 60:
+        return urls[best_match]
+    return "https://www.gsmarena.com/"
 
-# ======= رسالة ترحيب =======
-WELCOME_MSG = (
-    "\U0001F44B مرحبًا بك في بوت أسعار الموبايلات!\n\n"
-    "\U0001F4F1 أرسل اسم الجهاز (مثال: Galaxy S25 Ultra)\n"
-    "\U0001F4B0 أو أرسل السعر (مثال: 1300000) للبحث عن أجهزة في هذا النطاق.\n"
-    "\U0001F504 استخدم الأمر /compare لمقارنة جهازين."
-)
-
-# ======= التحقق من الاشتراك =======
-async def check_user_subscription(user_id, context):
-    try:
-        member = await context.bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
-        return member.status in ["member", "creator", "administrator"]
-    except Exception as e:
-        print("⚠️ Subscription check failed:", e)
-        return False
-
-async def send_subscription_required(update: Update):
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📢 انضم إلى قناتنا", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
-        [InlineKeyboardButton("📸 تابعنا على إنستغرام", url="https://www.instagram.com/mitech808")],
-        [InlineKeyboardButton("🔄 تحقق من الاشتراك", callback_data="check_subscription")]
-    ])
-    await update.message.reply_text(
-        "🔒 يرجى الانضمام إلى قناتنا على تليغرام من أجل استخدام البوت 😍✅\n\n"
-        f"📢 قناة التليغرام: {CHANNEL_USERNAME}\n"
-        "📸 أيضًا يجب متابعة حساب الإنستغرام:\n"
-        "https://www.instagram.com/mitech808\n\n"
-        "✅ بعد الاشتراك، اضغط على /start للبدء الآن.",
-        reply_markup=keyboard
-    )
-
-# ======= مقارنة =======
-COMPARE_FIRST, COMPARE_SECOND = range(2)
-
+# ========== بدء ==========
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if not await check_user_subscription(user_id, context):
-        return await send_subscription_required(update)
-
-    store_user(update.effective_user)
+    save_user(update.effective_user.id)
     await update.message.reply_text(WELCOME_MSG)
 
-async def compare_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await check_user_subscription(update.effective_user.id, context):
-        return await send_subscription_required(update)
-    await update.message.reply_text("📱 أرسل اسم الجهاز الأول للمقارنة:")
-    return COMPARE_FIRST
-
-async def compare_first(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['compare_first'] = update.message.text.strip()
-    await update.message.reply_text("📱 الآن أرسل اسم الجهاز الثاني للمقارنة:")
-    return COMPARE_SECOND
-
-async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    first_name = context.user_data.get('compare_first')
-    second_name = update.message.text.strip()
-
-    def best_match(name):
-        matches = process.extract(name, price_data.keys(), limit=1)
-        if matches and matches[0][1] >= 95:
-            return matches[0][0]
-        return None
-
-    first = best_match(first_name)
-    second = best_match(second_name)
-
-    if not first or not second:
-        await update.message.reply_text("❌ لم أتمكن من العثور على أحد الأجهزة. حاول كتابة الأسماء بشكل أدق.")
-        return ConversationHandler.END
-
-    msg = f"⚖️ مقارنة بين:\n\n"
-    msg += f"📱 {first}:\n"
-    for spec in price_data[first]:
-        msg += (
-            f"💰 السعر: {spec['price']}\n"
-            f"🏬 المتجر: {spec['store']}\n"
-            f"📍 العنوان: {spec['address']}\n"
-            f"🏷️ الماركة: {spec['brand']}\n\n"
-        )
-
-    msg += f"\n📱 {second}:\n"
-    for spec in price_data[second]:
-        msg += (
-            f"💰 السعر: {spec['price']}\n"
-            f"🏬 المتجر: {spec['store']}\n"
-            f"📍 العنوان: {spec['address']}\n"
-            f"🏷️ الماركة: {spec['brand']}\n\n"
-        )
-
-    await update.message.reply_text(msg)
+# ========== إحصائيات ==========
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    count = get_user_count()
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"📎 مواصفات {first}", url=fuzzy_get_url(first))],
-        [InlineKeyboardButton(f"📎 مواصفات {second}", url=fuzzy_get_url(second))],
-        [InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="back_to_menu")]
+        [InlineKeyboardButton("📥 تصدير المستخدمين", callback_data="export_users")]
     ])
-    await update.message.reply_text("🔗 روابط المواصفات:", reply_markup=keyboard)
-    return ConversationHandler.END
+    await update.message.reply_text(f"👥 عدد المستخدمين: {count}", reply_markup=keyboard)
 
-async def compare_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ تم إلغاء عملية المقارنة.")
-    return ConversationHandler.END
+async def export_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.callback_query.answer()
+    if os.path.exists(USERS_PATH):
+        await update.callback_query.message.reply_document(document=USERS_PATH)
 
-# ======= زر الرجوع للقائمة =======
+# ========== اقتراح المطابقات ==========
+async def suggest_devices(update: Update, context: ContextTypes.DEFAULT_TYPE, query, all_devices):
+    matches = process.extract(query, all_devices, limit=5)
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(match[0], callback_data=f"search::{match[0]}")]
+        for match in matches if match[1] >= 60
+    ])
+    await update.message.reply_text("🔎 هل تقصد أحد هذه الأجهزة؟", reply_markup=keyboard)
+
+# ========== زر الرجوع للقائمة ==========
 async def back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.message.reply_text(WELCOME_MSG)
+    await update.callback_query.answer()
+    await update.callback_query.message.reply_text(WELCOME_MSG)
 
-# ======= الرسائل العامة =======
+# ========== دالة البحث ==========
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if not await check_user_subscription(user_id, context):
-        return await send_subscription_required(update)
-
-    store_user(update.effective_user)
-
     text = update.message.text.strip()
+    df = load_prices()
+    all_devices = df['name'].unique().tolist()
 
-    if text.isdigit():
-        target = int(text)
-        margin = 0.10
-        min_price = int(target * (1 - margin))
-        max_price = int(target * (1 + margin))
-
-        for name, specs in price_data.items():
-            for spec in specs:
-                try:
-                    price = int(str(spec['price']).replace(',', '').replace('٬', ''))
-                    if min_price <= price <= max_price:
-                        msg = (
-                            f"📱 {name}\n"
-                            f"💰 السعر: {spec['price']}\n"
-                            f"🏬 المتجر: {spec['store']}\n"
-                            f"📍 العنوان: {spec['address']}\n"
-                            f"🏷️ الماركة: {spec['brand']}"
-                        )
-                        keyboard = InlineKeyboardMarkup([
-                            [InlineKeyboardButton("📎 رابط المواصفات", url=fuzzy_get_url(name))],
-                            [InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="back_to_menu")]
-                        ])
-                        await update.message.reply_text(msg, reply_markup=keyboard)
-                except:
-                    continue
-        return
-
-    matches = process.extract(text, price_data.keys(), limit=5)
-    good_matches = [m for m in matches if m[1] >= 95]
-
-    if not good_matches:
-        suggestions = [m[0] for m in matches if m[1] >= 70]
-        if suggestions:
-            suggestion_text = "\n".join(f"🔹 {s}" for s in suggestions)
-            await update.message.reply_text(
-                f"❌ لم أجد جهازًا مطابقًا بدقة.\n\nهل تقصد أحد هذه الأجهزة؟\n\n{suggestion_text}"
-            )
+    # مقارنة بين جهازين
+    if " vs " in text.lower():
+        first, second = text.lower().split(" vs ")
+        first_match = process.extractOne(first.strip(), all_devices)
+        second_match = process.extractOne(second.strip(), all_devices)
+        if first_match[1] >= 60 and second_match[1] >= 60:
+            await compare_second(update, context, first_match[0], second_match[0])
         else:
-            await update.message.reply_text("❌ لم أجد جهازًا مشابهًا. حاول كتابة الاسم بشكل أدق.")
+            await suggest_devices(update, context, text, all_devices)
         return
+
+    # بحث عن جهاز واحد
+    good_matches = process.extract(text, all_devices, limit=1)
+    if not good_matches or good_matches[0][1] < 60:
+        await suggest_devices(update, context, text, all_devices)
+        return
+
+    price_data = {}
+    for _, row in df.iterrows():
+        name = row['name']
+        if name not in price_data:
+            price_data[name] = []
+        price_data[name].append({
+            'price': row['price'],
+            'store': row['المتجر'],
+            'address': row['العنوان'],
+            'brand': row[' Brand ']
+        })
 
     for name, _ in good_matches:
         for spec in price_data[name]:
@@ -262,84 +143,45 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
             await update.message.reply_text(msg, reply_markup=keyboard)
 
-# ======= التحقق من الاشتراك مرة أخرى =======
-async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    if await check_user_subscription(query.from_user.id, context):
-        await query.edit_message_text("✅ تم التحقق! يمكنك الآن استخدام البوت.\n\n" + WELCOME_MSG)
-    else:
-        await query.answer("❌ لم يتم العثور على اشتراكك بعد. تأكد من الاشتراك ثم أعد المحاولة.", show_alert=True)
+# ========== مقارنة جهازين ==========
+async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE, first, second):
+    df = load_prices()
+    first_info = df[df['name'] == first].iloc[0]
+    second_info = df[df['name'] == second].iloc[0]
 
-# ======= أمر المشرف /stats مع زر تحميل CSV =======
-async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id not in ADMIN_IDS:
-        await update.message.reply_text("❌ هذا الأمر مخصص للمشرف فقط.")
-        return
+    msg = f"📊 مقارنة بين:\n\n"
+    msg += f"🔹 {first}\n💰 {first_info['price']} - {first_info['المتجر']}\n\n"
+    msg += f"🔸 {second}\n💰 {second_info['price']} - {second_info['المتجر']}"
 
-    users = load_users()
-    if not users:
-        await update.message.reply_text("❌ لا يوجد مستخدمون مسجلون بعد.")
-        return
-
-    msg = f"👥 عدد مستخدمي البوت: {len(users)}"
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📥 تحميل ملف المستخدمين (CSV)", callback_data="download_users_csv")]
+        [InlineKeyboardButton(f"📎 مواصفات {first}", url=fuzzy_get_url(first))],
+        [InlineKeyboardButton(f"📎 مواصفات {second}", url=fuzzy_get_url(second))],
+        [InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="back_to_menu")]
     ])
     await update.message.reply_text(msg, reply_markup=keyboard)
 
-async def send_users_csv(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ========== زر مقترح ==========
+async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    user_id = query.from_user.id
-    if user_id not in ADMIN_IDS:
-        await query.answer("❌ هذا الأمر مخصص للمشرف فقط.", show_alert=True)
-        return
+    if query.data.startswith("search::"):
+        device_name = query.data.split("::")[1]
+        update.message = query.message  # لتحاكي الرسالة الأصلية
+        update.message.text = device_name
+        await handle_message(update, context)
 
-    users = load_users()
-    if not users:
-        await query.edit_message_text("❌ لا يوجد مستخدمون مسجلون بعد.")
-        return
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["id", "name", "username"])
-    for user in users.values():
-        writer.writerow([user["id"], user["name"], user.get("username") or ""])
-
-    output.seek(0)
-    csv_bytes = io.BytesIO(output.getvalue().encode('utf-8'))
-
-    await query.message.reply_document(
-        document=InputFile(csv_bytes, filename="users.csv"),
-        caption="📂 ملف المستخدمين"
-    )
-
-# ======= تشغيل البوت =======
+# ========== إعداد البوت ==========
 def main():
-    app = Application.builder().token(TOKEN).build()
-
-    compare_conv = ConversationHandler(
-        entry_points=[CommandHandler("compare", compare_start)],
-        states={
-            COMPARE_FIRST: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_first)],
-            COMPARE_SECOND: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_second)],
-        },
-        fallbacks=[CommandHandler("cancel", compare_cancel)],
-        allow_reentry=True
-    )
+    app = Application.builder().token("YOUR_BOT_TOKEN_HERE").build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("stats", stats_command))
-    app.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
-    app.add_handler(CallbackQueryHandler(send_users_csv, pattern="^download_users_csv$"))
+    app.add_handler(CommandHandler("stats", stats))
+    app.add_handler(CallbackQueryHandler(export_users, pattern="^export_users$"))
     app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_to_menu$"))
-    app.add_handler(compare_conv)
+    app.add_handler(CallbackQueryHandler(handle_callback_query, pattern="^search::"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    print("✅ البوت يعمل الآن...")
     app.run_polling()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
