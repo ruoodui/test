@@ -12,13 +12,13 @@ from telegram.ext import (
 )
 
 # ======= إعدادات =======
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # ✅ مسار ديناميكي
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PRICES_PATH = os.path.join(BASE_DIR, "prices.xlsx")
 URLS_PATH = os.path.join(BASE_DIR, "phones_urls.json")
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 TOKEN = os.getenv("TOKEN")
 CHANNEL_USERNAME = "@mitech808"
-ADMIN_IDS = [193646746]  # <-- استبدل بمعرف المشرف الخاص بك
+ADMIN_IDS = [193646746]  # استبدل بمعرف المشرف الخاص بك
 
 # ======= دوال إدارة المستخدمين =======
 def load_users():
@@ -127,7 +127,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_user_subscription(user_id, context):
         return await send_subscription_required(update)
 
-    store_user(update.effective_user)  # حفظ المستخدم
+    store_user(update.effective_user)
     await update.message.reply_text(WELCOME_MSG)
 
 async def compare_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -159,24 +159,27 @@ async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     msg = f"⚖️ مقارنة بين:\n\n"
+
     msg += f"📱 {first}:\n"
     for spec in price_data[first]:
         msg += (
             f"🏷️ الماركة: {spec['brand']}\n"
             f"💰 {spec['price']}\n"
             f"🏪 المتجر: {spec['store']}\n"
-            f"📍 العنوان: {spec['address']}\n"
-            f"🔗 {fuzzy_get_url(first)}\n"
+            f"📍 العنوان: {spec['address']}\n\n"
         )
-    msg += f"\n📱 {second}:\n"
+    msg += f"🔗 {fuzzy_get_url(first)}\n\n"
+
+    msg += f"📱 {second}:\n"
     for spec in price_data[second]:
         msg += (
             f"🏷️ الماركة: {spec['brand']}\n"
             f"💰 {spec['price']}\n"
             f"🏪 المتجر: {spec['store']}\n"
-            f"📍 العنوان: {spec['address']}\n"
-            f"🔗 {fuzzy_get_url(second)}\n"
+            f"📍 العنوان: {spec['address']}\n\n"
         )
+    msg += f"🔗 {fuzzy_get_url(second)}\n"
+
     await update.message.reply_text(msg)
     return ConversationHandler.END
 
@@ -190,7 +193,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_user_subscription(user_id, context):
         return await send_subscription_required(update)
 
-    store_user(update.effective_user)  # حفظ المستخدم
+    store_user(update.effective_user)
 
     text = update.message.text.strip()
 
@@ -258,7 +261,7 @@ async def select_phone_callback(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     await query.answer()
 
-    data = query.data  # شكلها "select_phone::اسم الجهاز"
+    data = query.data
     if not data.startswith("select_phone::"):
         return
 
