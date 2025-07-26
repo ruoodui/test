@@ -178,7 +178,6 @@ async def brand_store_selected_callback(update: Update, context: ContextTypes.DE
 
     if data.startswith("brand_"):
         brand = data.replace("brand_", "")
-        # نبحث عن الأجهزة التي تبدأ بالماركة المختارة
         results = [name for name in price_data.keys() if name.startswith(brand)]
         if not results:
             await query.edit_message_text(f"❌ لا توجد أجهزة للماركة: {brand}", reply_markup=back_to_menu_keyboard())
@@ -282,26 +281,24 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return
 
     if mode == "price":
-        # عرض النتائج كنص مفصل عند البحث بالسعر
-        msg = "🔍 نتائج البحث عن السعر:\n\n"
+        # عرض النتائج كل واحدة في رسالة منفصلة عند البحث بالسعر
         count = 0
         for name in results[:10]:
             for spec in price_data[name]:
-                msg += (
+                msg = (
                     f"📱 {name}\n"
                     f"💰 السعر: {spec['price']}\n"
                     f"🏬 المتجر: {spec['store']}\n"
-                    f"📍 العنوان: {spec['location']}\n\n"
+                    f"📍 العنوان: {spec['location']}\n"
                 )
+                await update.message.reply_text(msg)
                 count += 1
                 if count >= 10:
                     break
             if count >= 10:
                 break
-        msg += "🔙 يمكنك العودة للقائمة الرئيسية."
-        await update.message.reply_text(msg, reply_markup=back_to_menu_keyboard())
+        await update.message.reply_text("🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
     else:
-        # عرض النتائج كأزرار للأوضاع الأخرى
         buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:10]]
         buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
 
@@ -333,7 +330,6 @@ async def device_option_callback(update: Update, context: ContextTypes.DEFAULT_T
     await query.edit_message_text(msg, reply_markup=keyboard)
 
 # ======= باقي الوظائف كما في السكربت الأصلي =======
-# التحقق من الاشتراك عند الضغط على زر
 async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -342,7 +338,6 @@ async def check_subscription_button(update: Update, context: ContextTypes.DEFAUL
     else:
         await query.answer("❌ لم يتم العثور على اشتراكك بعد. تأكد من الاشتراك ثم أعد المحاولة.", show_alert=True)
 
-# أمر المشرف /stats مع زر تصدير CSV
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id not in ADMIN_IDS:
