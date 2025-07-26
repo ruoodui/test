@@ -87,8 +87,8 @@ def fuzzy_get_url(name):
 # ======= الرسائل الثابتة =======
 WELCOME_MSG = (
     "👋 مرحبًا بك في بوت أسعار الموبايلات!\n\n"
-    "لإضافة متجرك للبوت، يرجى مراسلتنا عبر رقم الواتساب التالي:\n"
-    "٠٧٨٢٨٨١٦٥٠٨\n\n"
+    "لاضافة متجرك للبوت مراسله الرقم ادناه وتساب\n"
+    "07828816508\n\n"
     "اختر طريقة البحث المناسبة لك من الأزرار أدناه:"
 )
 
@@ -184,9 +184,12 @@ async def brand_store_selected_callback(update: Update, context: ContextTypes.DE
         if not results:
             await query.edit_message_text(f"❌ لا توجد أجهزة للماركة: {brand}", reply_markup=back_to_menu_keyboard())
             return
-        buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:10]]
-        buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
-        await query.edit_message_text(f"🏷️ أجهزة الماركة: {brand}", reply_markup=InlineKeyboardMarkup(buttons))
+
+        # خزن النتائج مع بداية الصفحة 0
+        context.user_data['brand_search_results'] = results
+        context.user_data['brand_search_page'] = 0
+
+        await send_brand_results_page(query, context)
 
     elif data.startswith("store_"):
         store = data.replace("store_", "")
@@ -197,6 +200,36 @@ async def brand_store_selected_callback(update: Update, context: ContextTypes.DE
             "🔤 الآن أرسل اسم الجهاز للبحث ضمن هذا المتجر:",
             reply_markup=back_to_menu_keyboard()
         )
+
+# ======= دالة لإظهار صفحة نتائج الماركة مع زر المزيد =======
+async def send_brand_results_page(query, context):
+    results = context.user_data.get('brand_search_results', [])
+    page = context.user_data.get('brand_search_page', 0)
+    per_page = 10
+    start = page * per_page
+    end = start + per_page
+    page_results = results[start:end]
+
+    buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in page_results]
+
+    nav_buttons = []
+    if end < len(results):
+        nav_buttons.append(InlineKeyboardButton("▶️ المزيد", callback_data="brand_more"))
+    nav_buttons.append(InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU))
+    buttons.append(nav_buttons)
+
+    await query.edit_message_text(
+        f"🏷️ أجهزة الماركة - الصفحة {page + 1}:", 
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+# ======= دالة التعامل مع زر "المزيد" في نتائج الماركة =======
+async def brand_more_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    # زيادة الصفحة بمقدار واحد
+    context.user_data['brand_search_page'] = context.user_data.get('brand_search_page', 0) + 1
+    await send_brand_results_page(query, context)
 
 # ======= التعامل مع أزرار القائمة الرئيسية =======
 async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -464,6 +497,7 @@ def main():
     app.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
     app.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^search_by_|^back_to_menu$"))
     app.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
+    app.add_handler(CallbackQueryHandler(brand_more_callback, pattern="^brand_more$"))  # زر المزيد للماركة
     app.add_handler(compare_conv)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
 
