@@ -75,21 +75,6 @@ def load_phone_urls(filepath=URLS_PATH):
 price_data = load_excel_prices()
 phone_urls = load_phone_urls()
 
-# ======= استخراج الماركات والمتاجر =======
-def get_all_brands():
-    brands = set()
-    for name in price_data.keys():
-        brand = name.split()[0]  # أول كلمة كماركة
-        brands.add(brand)
-    return sorted(brands)
-
-def get_all_stores():
-    stores = set()
-    for specs in price_data.values():
-        for spec in specs:
-            stores.add(spec['store'])
-    return sorted(stores)
-
 # ======= مطابقة غامضة للروابط =======
 def fuzzy_get_url(name):
     if name in phone_urls:
@@ -153,7 +138,66 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     store_user(update.effective_user)
     await update.message.reply_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
 
-# ======= التعامل مع أزرار القائمة =======
+# ======= عرض قائمة الماركات كأزرار =======
+def get_brands():
+    brands = set()
+    for name in price_data.keys():
+        brand = name.split()[0].strip()
+        brands.add(brand)
+    return sorted(brands)
+
+async def show_brands(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    brands = get_brands()
+    buttons = [[InlineKeyboardButton(b, callback_data=f"brand_{b}")] for b in brands[:30]]
+    buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
+    await query.edit_message_text("🏷️ اختر الماركة:", reply_markup=InlineKeyboardMarkup(buttons))
+
+# ======= عرض قائمة المتاجر كأزرار =======
+def get_stores():
+    stores = set()
+    for specs_list in price_data.values():
+        for spec in specs_list:
+            stores.add(spec['store'])
+    return sorted(stores)
+
+async def show_stores(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    stores = get_stores()
+    buttons = [[InlineKeyboardButton(s, callback_data=f"store_{s}")] for s in stores[:30]]
+    buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
+    await query.edit_message_text("🏬 اختر المتجر:", reply_markup=InlineKeyboardMarkup(buttons))
+
+# ======= التعامل مع اختيار الماركة أو المتجر =======
+async def brand_store_selected_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    if data.startswith("brand_"):
+        brand = data.replace("brand_", "")
+        # نبحث عن الأجهزة التي تبدأ بالماركة المختارة
+        results = [name for name in price_data.keys() if name.startswith(brand)]
+        if not results:
+            await query.edit_message_text(f"❌ لا توجد أجهزة للماركة: {brand}", reply_markup=back_to_menu_keyboard())
+            return
+        buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:10]]
+        buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
+        await query.edit_message_text(f"🏷️ أجهزة الماركة: {brand}", reply_markup=InlineKeyboardMarkup(buttons))
+
+    elif data.startswith("store_"):
+        store = data.replace("store_", "")
+        context.user_data['search_mode'] = "store_name"
+        context.user_data['selected_store'] = store
+        await query.edit_message_text(
+            f"🏬 تم اختيار المتجر: {store}\n\n"
+            "🔤 الآن أرسل اسم الجهاز للبحث ضمن هذا المتجر:",
+            reply_markup=back_to_menu_keyboard()
+        )
+
+# ======= التعامل مع أزرار القائمة الرئيسية =======
 async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -163,64 +207,16 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await query.edit_message_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
         return
 
-    # عرض أزرار الماركات عند اختيار "البحث عن طريق الماركة"
     if data == "search_by_brand":
-        brands = get_all_brands()
-        buttons = [[InlineKeyboardButton(brand, callback_data=f"brand_{brand}")] for brand in brands]
-        buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
-        await query.edit_message_text("🔍 اختر الماركة:", reply_markup=InlineKeyboardMarkup(buttons))
-        return
-
-    # عرض أزرار المتاجر عند اختيار "البحث عن طريق المتجر"
-    if data == "search_by_store":
-        stores = get_all_stores()
-        buttons = [[InlineKeyboardButton(store, callback_data=f"store_{store}")] for store in stores]
-        buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
-        await query.edit_message_text("🔍 اختر المتجر:", reply_markup=InlineKeyboardMarkup(buttons))
-        return
-
-    # باقي أوضاع البحث تطلب كتابة نص
-    await query.edit_message_text(f"✏️ الآن أرسل نص البحث لـ {data.replace('search_by_', '').replace('_', ' ')}:")
-    context.user_data['search_mode'] = data.replace("search_by_", "")
-    context.user_data['search_results'] = []
-
-# ======= التعامل مع اختيار ماركة أو متجر من الأزرار =======
-async def brand_store_selected_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    data = query.data
-
-    if data.startswith("brand_"):
-        brand = data[len("brand_"):]
-        results = [name for name in price_data.keys() if name.startswith(brand)]
-        title = f"📱 نتائج البحث عن الماركة: {brand}"
-
-    elif data.startswith("store_"):
-        store = data[len("store_"):]
-        results = []
-        for name, specs in price_data.items():
-            for spec in specs:
-                if spec['store'] == store:
-                    results.append(name)
-                    break
-        title = f"📱 نتائج البحث عن المتجر: {store}"
-
+        return await show_brands(update, context)
+    elif data == "search_by_store":
+        return await show_stores(update, context)
     else:
-        await query.edit_message_text("⚠️ خطأ غير معروف.", reply_markup=back_to_menu_keyboard())
-        return
+        await query.edit_message_text(f"✏️ الآن أرسل نص البحث لـ {data.replace('search_by_', '').replace('_', ' ')}:")
+        context.user_data['search_mode'] = data.replace("search_by_", "")
+        context.user_data['search_results'] = []
 
-    results = list(dict.fromkeys(results))  # إزالة التكرار
-
-    if not results:
-        await query.edit_message_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
-        return
-
-    buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:15]]
-    buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
-
-    await query.edit_message_text(title, reply_markup=InlineKeyboardMarkup(buttons))
-
-# ======= البحث بناءً على النص (لباقي الطرق) =======
+# ======= البحث بناءً على الوضع المختار =======
 async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_user_subscription(user_id, context):
@@ -228,7 +224,6 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
     store_user(update.effective_user)
 
     if 'search_mode' not in context.user_data:
-        # لو لم يتم اختيار وضع البحث، نعيد للقائمة الرئيسية
         await update.message.reply_text("⚠️ يرجى اختيار طريقة البحث أولاً من القائمة.", reply_markup=main_menu_keyboard())
         return
 
@@ -243,8 +238,21 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
             if score >= 70:
                 results.append(name)
 
+    elif mode == "store_name":
+        store = context.user_data.get('selected_store')
+        if not store:
+            await update.message.reply_text("⚠️ حدث خطأ داخلي، المتجر غير محدد. الرجاء إعادة المحاولة.", reply_markup=back_to_menu_keyboard())
+            return
+
+        for name in price_data.keys():
+            if text.lower() in name.lower():
+                specs = price_data.get(name, [])
+                for spec in specs:
+                    if spec['store'] == store:
+                        results.append(name)
+                        break
+
     elif mode == "price":
-        # البحث حسب السعر (نطاق ±10%)
         try:
             target = int(text)
             margin = 0.10
@@ -267,17 +275,38 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("⚠️ وضع البحث غير معروف أو غير مدعوم في البحث النصي حالياً.", reply_markup=back_to_menu_keyboard())
         return
 
-    results = list(dict.fromkeys(results))  # إزالة التكرار
+    results = list(dict.fromkeys(results))
 
     if not results:
         await update.message.reply_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
         return
 
-    buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:10]]
-    buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
+    if mode == "price":
+        # عرض النتائج كنص مفصل عند البحث بالسعر
+        msg = "🔍 نتائج البحث عن السعر:\n\n"
+        count = 0
+        for name in results[:10]:
+            for spec in price_data[name]:
+                msg += (
+                    f"📱 {name}\n"
+                    f"💰 السعر: {spec['price']}\n"
+                    f"🏬 المتجر: {spec['store']}\n"
+                    f"📍 العنوان: {spec['location']}\n\n"
+                )
+                count += 1
+                if count >= 10:
+                    break
+            if count >= 10:
+                break
+        msg += "🔙 يمكنك العودة للقائمة الرئيسية."
+        await update.message.reply_text(msg, reply_markup=back_to_menu_keyboard())
+    else:
+        # عرض النتائج كأزرار للأوضاع الأخرى
+        buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:10]]
+        buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
 
-    keyboard = InlineKeyboardMarkup(buttons)
-    await update.message.reply_text(f"🔍 نتائج البحث عن '{text}':", reply_markup=keyboard)
+        keyboard = InlineKeyboardMarkup(buttons)
+        await update.message.reply_text(f"🔍 نتائج البحث عن '{text}':", reply_markup=keyboard)
 
 # ======= عرض تفاصيل الجهاز =======
 async def device_option_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -437,7 +466,6 @@ def main():
     app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
     app.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
     app.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^search_by_|^back_to_menu$"))
-    # تسجيل معالج أزرار الماركات والمتاجر
     app.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
     app.add_handler(compare_conv)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
