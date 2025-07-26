@@ -87,6 +87,8 @@ def fuzzy_get_url(name):
 # ======= الرسائل الثابتة =======
 WELCOME_MSG = (
     "👋 مرحبًا بك في بوت أسعار الموبايلات!\n\n"
+    "لإضافة متجرك للبوت، يرجى مراسلتنا عبر رقم الواتساب التالي:\n"
+    "٠٧٨٢٨٨١٦٥٠٨\n\n"
     "اختر طريقة البحث المناسبة لك من الأزرار أدناه:"
 )
 
@@ -138,7 +140,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     store_user(update.effective_user)
     await update.message.reply_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
 
-# ======= عرض قائمة الماركات مع دعم زر المزيد =======
+# ======= عرض قائمة الماركات كأزرار =======
 def get_brands():
     brands = set()
     for name in price_data.keys():
@@ -150,7 +152,7 @@ async def show_brands(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     brands = get_brands()
-    buttons = [[InlineKeyboardButton(b, callback_data=f"brand_{b}_0")] for b in brands[:30]]
+    buttons = [[InlineKeyboardButton(b, callback_data=f"brand_{b}")] for b in brands[:30]]
     buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
     await query.edit_message_text("🏷️ اختر الماركة:", reply_markup=InlineKeyboardMarkup(buttons))
 
@@ -170,41 +172,21 @@ async def show_stores(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
     await query.edit_message_text("🏬 اختر المتجر:", reply_markup=InlineKeyboardMarkup(buttons))
 
-# ======= التعامل مع اختيار الماركة مع صفحات النتائج =======
+# ======= التعامل مع اختيار الماركة أو المتجر =======
 async def brand_store_selected_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     data = query.data
 
     if data.startswith("brand_"):
-        # صيغة callback_data: brand_اسم_الماركة_رقم_الصفحة
-        parts = data.split("_")
-        brand = "_".join(parts[1:-1])
-        page = int(parts[-1])
-
-        # جلب الأجهزة التي تبدأ بالماركة
-        results = [name for name in price_data.keys() if name.lower().startswith(brand.lower())]
+        brand = data.replace("brand_", "")
+        results = [name for name in price_data.keys() if name.startswith(brand)]
         if not results:
             await query.edit_message_text(f"❌ لا توجد أجهزة للماركة: {brand}", reply_markup=back_to_menu_keyboard())
             return
-
-        per_page = 10
-        start = page * per_page
-        end = start + per_page
-        page_results = results[start:end]
-
-        buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in page_results]
-
-        if end < len(results):
-            # زر المزيد للصفحة التالية
-            buttons.append([InlineKeyboardButton("المزيد ➕", callback_data=f"brand_{brand}_{page+1}")])
-
+        buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:10]]
         buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
-
-        await query.edit_message_text(
-            f"🏷️ أجهزة الماركة: {brand} (صفحة {page + 1})",
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
+        await query.edit_message_text(f"🏷️ أجهزة الماركة: {brand}", reply_markup=InlineKeyboardMarkup(buttons))
 
     elif data.startswith("store_"):
         store = data.replace("store_", "")
@@ -457,37 +439,36 @@ async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg)
     return ConversationHandler.END
 
-async def cancel_compare(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ تم إلغاء المقارنة.")
+async def compare_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ تم إلغاء عملية المقارنة.")
     return ConversationHandler.END
 
-# ======= نقاط الدخول =======
 def main():
-    application = Application.builder().token(TOKEN).build()
+    app = Application.builder().token(TOKEN).build()
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("stats", stats_command))
-
-    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^(search_by_name|search_by_brand|search_by_store|search_by_price|back_to_menu)$"))
-    application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_).*"))
-    application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_.*$"))
-    application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
-    application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
-
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
-
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('compare', compare_start)],
+    compare_conv = ConversationHandler(
+        entry_points=[CommandHandler("compare", compare_start)],
         states={
             COMPARE_FIRST: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_first)],
             COMPARE_SECOND: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_second)],
         },
-        fallbacks=[CommandHandler('cancel', cancel_compare)],
+        fallbacks=[CommandHandler("cancel", compare_cancel)],
+        allow_reentry=True
     )
-    application.add_handler(conv_handler)
 
-    print("🤖 بوت أسعار الهواتف يعمل الآن ...")
-    application.run_polling()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("stats", stats_command))
+
+    app.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
+    app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
+    app.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
+    app.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^search_by_|^back_to_menu$"))
+    app.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
+    app.add_handler(compare_conv)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
+
+    print("✅ البوت يعمل الآن...")
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
