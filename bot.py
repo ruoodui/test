@@ -281,17 +281,19 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return
 
     if mode == "price":
-        # عرض النتائج كل واحدة في رسالة منفصلة عند البحث بالسعر
         count = 0
         for name in results[:10]:
             for spec in price_data[name]:
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("📎 المواصفات", url=fuzzy_get_url(name))]
+                ])
                 msg = (
                     f"📱 {name}\n"
                     f"💰 السعر: {spec['price']}\n"
                     f"🏬 المتجر: {spec['store']}\n"
                     f"📍 العنوان: {spec['location']}\n"
                 )
-                await update.message.reply_text(msg)
+                await update.message.reply_text(msg, reply_markup=keyboard)
                 count += 1
                 if count >= 10:
                     break
@@ -382,7 +384,6 @@ async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAUL
 
     await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
 
-# ======= مقارنة الأجهزة =======
 COMPARE_FIRST, COMPARE_SECOND = range(2)
 
 async def compare_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -440,7 +441,6 @@ async def compare_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء عملية المقارنة.")
     return ConversationHandler.END
 
-# ======= إضافة المعالجات وتشغيل البوت =======
 def main():
     app = Application.builder().token(TOKEN).build()
 
