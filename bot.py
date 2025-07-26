@@ -75,6 +75,21 @@ def load_phone_urls(filepath=URLS_PATH):
 price_data = load_excel_prices()
 phone_urls = load_phone_urls()
 
+# ======= استخراج الماركات والمتاجر =======
+def get_all_brands():
+    brands = set()
+    for name in price_data.keys():
+        brand = name.split()[0]  # أول كلمة كماركة
+        brands.add(brand)
+    return sorted(brands)
+
+def get_all_stores():
+    stores = set()
+    for specs in price_data.values():
+        for spec in specs:
+            stores.add(spec['store'])
+    return sorted(stores)
+
 # ======= مطابقة غامضة للروابط =======
 def fuzzy_get_url(name):
     if name in phone_urls:
@@ -148,11 +163,64 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await query.edit_message_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
         return
 
+    # عرض أزرار الماركات عند اختيار "البحث عن طريق الماركة"
+    if data == "search_by_brand":
+        brands = get_all_brands()
+        buttons = [[InlineKeyboardButton(brand, callback_data=f"brand_{brand}")] for brand in brands]
+        buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
+        await query.edit_message_text("🔍 اختر الماركة:", reply_markup=InlineKeyboardMarkup(buttons))
+        return
+
+    # عرض أزرار المتاجر عند اختيار "البحث عن طريق المتجر"
+    if data == "search_by_store":
+        stores = get_all_stores()
+        buttons = [[InlineKeyboardButton(store, callback_data=f"store_{store}")] for store in stores]
+        buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
+        await query.edit_message_text("🔍 اختر المتجر:", reply_markup=InlineKeyboardMarkup(buttons))
+        return
+
+    # باقي أوضاع البحث تطلب كتابة نص
     await query.edit_message_text(f"✏️ الآن أرسل نص البحث لـ {data.replace('search_by_', '').replace('_', ' ')}:")
     context.user_data['search_mode'] = data.replace("search_by_", "")
     context.user_data['search_results'] = []
 
-# ======= البحث بناءً على الوضع المختار =======
+# ======= التعامل مع اختيار ماركة أو متجر من الأزرار =======
+async def brand_store_selected_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    if data.startswith("brand_"):
+        brand = data[len("brand_"):]
+        results = [name for name in price_data.keys() if name.startswith(brand)]
+        title = f"📱 نتائج البحث عن الماركة: {brand}"
+
+    elif data.startswith("store_"):
+        store = data[len("store_"):]
+        results = []
+        for name, specs in price_data.items():
+            for spec in specs:
+                if spec['store'] == store:
+                    results.append(name)
+                    break
+        title = f"📱 نتائج البحث عن المتجر: {store}"
+
+    else:
+        await query.edit_message_text("⚠️ خطأ غير معروف.", reply_markup=back_to_menu_keyboard())
+        return
+
+    results = list(dict.fromkeys(results))  # إزالة التكرار
+
+    if not results:
+        await query.edit_message_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
+        return
+
+    buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:15]]
+    buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
+
+    await query.edit_message_text(title, reply_markup=InlineKeyboardMarkup(buttons))
+
+# ======= البحث بناءً على النص (لباقي الطرق) =======
 async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_user_subscription(user_id, context):
@@ -167,7 +235,6 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
     mode = context.user_data['search_mode']
     text = update.message.text.strip()
 
-    # بحث حسب الوضع
     results = []
 
     if mode == "name":
@@ -175,22 +242,6 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
         for name, score in matches:
             if score >= 70:
                 results.append(name)
-
-    elif mode == "brand":
-        # البحث في أسماء الأجهزة التي تبدأ بالماركة
-        brand = text.lower()
-        for name in price_data.keys():
-            if name.lower().startswith(brand):
-                results.append(name)
-
-    elif mode == "store":
-        # البحث في المتاجر ضمن الأسعار
-        store_query = text.lower()
-        for name, specs in price_data.items():
-            for spec in specs:
-                if store_query in spec['store'].lower():
-                    results.append(name)
-                    break
 
     elif mode == "price":
         # البحث حسب السعر (نطاق ±10%)
@@ -211,8 +262,9 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
         except ValueError:
             await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
             return
+
     else:
-        await update.message.reply_text("⚠️ وضع البحث غير معروف.", reply_markup=back_to_menu_keyboard())
+        await update.message.reply_text("⚠️ وضع البحث غير معروف أو غير مدعوم في البحث النصي حالياً.", reply_markup=back_to_menu_keyboard())
         return
 
     results = list(dict.fromkeys(results))  # إزالة التكرار
@@ -221,7 +273,6 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
         return
 
-    # عرض النتائج مع أزرار تفاصيل
     buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:10]]
     buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
 
@@ -307,7 +358,7 @@ async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAUL
 
     await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
 
-# ======= مقارنة الأجهزة (كما في سكربتك الأصلي) =======
+# ======= مقارنة الأجهزة =======
 COMPARE_FIRST, COMPARE_SECOND = range(2)
 
 async def compare_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -386,6 +437,8 @@ def main():
     app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
     app.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
     app.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^search_by_|^back_to_menu$"))
+    # تسجيل معالج أزرار الماركات والمتاجر
+    app.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
     app.add_handler(compare_conv)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
 
