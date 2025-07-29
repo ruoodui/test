@@ -461,25 +461,27 @@ async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💰 السعر: {spec2.get('price', '—')}\n"
         f"🏬 المتجر: {spec2.get('store', '—')}\n"
     )
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)]
-    ])
-
-    await update.message.reply_text(msg, reply_markup=keyboard)
+    await update.message.reply_text(msg)
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ تم إلغاء العملية.", reply_markup=main_menu_keyboard())
+    await update.message.reply_text("تم إلغاء العملية.", reply_markup=main_menu_keyboard())
     return ConversationHandler.END
 
+# ======= إعداد التطبيق والروبوت =======
 def main():
-    app = Application.builder().token(TOKEN).build()
+    application = Application.builder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("stats", stats_command))
 
-    conv_handler = ConversationHandler(
+    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^(search_by_|back_to_menu|search_by_brand|search_by_store)$"))
+    application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
+    application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
+    application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="check_subscription"))
+    application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="export_users_csv"))
+
+    compare_handler = ConversationHandler(
         entry_points=[CommandHandler("compare", compare_start)],
         states={
             COMPARE_FIRST: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_first)],
@@ -487,17 +489,12 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-    app.add_handler(conv_handler)
+    application.add_handler(compare_handler)
 
-    app.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^(search_by_|back_to_menu|check_subscription)$"))
-    app.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
-    app.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
-    app.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
-    app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
 
-    print("🤖 Bot is running...")
-    app.run_polling()
+    print("🤖 البوت يعمل الآن...")
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
