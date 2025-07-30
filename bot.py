@@ -145,7 +145,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     store_user(update.effective_user)
     await update.message.reply_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
 
-# ======= عرض قائمة الماركات =======
+# ======= عرض قائمة الماركات من العمود المخصص =======
 def get_brands():
     return brand_list
 
@@ -157,7 +157,7 @@ async def show_brands(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
     await query.edit_message_text("🏷️ اختر الماركة:", reply_markup=InlineKeyboardMarkup(buttons))
 
-# ======= عرض قائمة المتاجر =======
+# ======= عرض قائمة المتاجر كأزرار =======
 def get_stores():
     stores = set()
     for specs_list in price_data.values():
@@ -385,7 +385,7 @@ async def device_option_callback(update: Update, context: ContextTypes.DEFAULT_T
     ])
     await query.edit_message_text(msg, reply_markup=keyboard)
 
-# ======= التحقق من الاشتراك عبر الزر =======
+# ======= باقي الوظائف =======
 async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -394,10 +394,50 @@ async def check_subscription_button(update: Update, context: ContextTypes.DEFAUL
     else:
         await query.answer("❌ لم يتم العثور على اشتراكك بعد. تأكد من الاشتراك ثم أعد المحاولة.", show_alert=True)
 
-# ======= إلغاء الأمر =======
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("تم الإلغاء.", reply_markup=main_menu_keyboard())
-    return ConversationHandler.END
+# ======= دوال إحصائيات المستخدمين للمشرف =======
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ هذا الأمر مخصص للمشرف فقط.")
+        return
+
+    users = load_users()
+    user_count = len(users)
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("⬇️ تصدير المستخدمين CSV", callback_data="export_users_csv")]
+    ])
+
+    await update.message.reply_text(
+        f"👥 عدد مستخدمي البوت: {user_count}",
+        reply_markup=keyboard
+    )
+
+async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+    if user_id not in ADMIN_IDS:
+        await query.answer("❌ هذا الأمر مخصص للمشرف فقط.", show_alert=True)
+        return
+
+    users = load_users()
+    if not users:
+        await query.message.reply_text("❌ لا يوجد مستخدمون مسجلون حالياً.")
+        return
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "name", "username"])
+    for user in users.values():
+        writer.writerow([user.get("id", ""), user.get("name", ""), user.get("username", "")])
+
+    output.seek(0)
+    bio = io.BytesIO(output.getvalue().encode("utf-8"))
+    bio.name = "users.csv"
+
+    await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
 
 # ======= تسجيل المعالجات =======
 def main():
@@ -411,10 +451,11 @@ def main():
     application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
     application.add_handler(CallbackQueryHandler(search_more_callback, pattern="^search_more$"))
     application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
+    application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
     application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
 
-    print("Bot started...")
+    print("🤖 البوت بدأ بنجاح.")
     application.run_polling()
 
 if __name__ == "__main__":
