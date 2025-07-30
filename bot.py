@@ -308,28 +308,21 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     elif mode == "price":
         try:
-            target = int(text.strip())
-            margin = 0.10
+            # تنظيف النص من أي حروف غير رقمية
+            target = int(''.join(filter(str.isdigit, text)))
+            margin = 0.10  # هامش 10%
             min_price = int(target * (1 - margin))
             max_price = int(target * (1 + margin))
-
+            results = []
             for name, specs in price_data.items():
                 for spec in specs:
-                    try:
-                        price = int(spec['price'])  # مباشرة تحويل السعر إلى عدد صحيح
-                        if min_price <= price <= max_price:
-                            results.append(name)
-                            break
-                    except (ValueError, TypeError):
+                    price_str = str(spec.get('price', '')).replace(',', '').replace('٬', '').strip()
+                    if not price_str.isdigit():
                         continue
-
-            if not results:
-                await update.message.reply_text(
-                    f"❌ لم أجد نتائج مطابقة للسعر {target} (النطاق من {min_price} إلى {max_price})",
-                    reply_markup=back_to_menu_keyboard()
-                )
-                return
-
+                    price = int(price_str)
+                    if min_price <= price <= max_price:
+                        results.append(name)
+                        break
         except ValueError:
             await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
             return
@@ -453,16 +446,17 @@ def main():
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("stats", stats_command))
-    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^(search_by_|back_to_menu)$"))
+    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern=r"^(search_by_.*|back_to_menu)$"))
+    application.add_handler(CallbackQueryHandler(show_brands, pattern="^search_by_brand$"))
+    application.add_handler(CallbackQueryHandler(show_stores, pattern="^search_by_store$"))
     application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
-    application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
     application.add_handler(CallbackQueryHandler(search_more_callback, pattern="^search_more$"))
+    application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
     application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
     application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
 
-    application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_search_text))
-
-    print("🤖 البوت بدأ العمل...")
+    print("Bot started...")
     application.run_polling()
 
 if __name__ == "__main__":
