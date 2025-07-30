@@ -11,7 +11,7 @@ from telegram import (
 )
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ConversationHandler, filters, ContextTypes
+    filters, ContextTypes
 )
 
 # ======= إعدادات =======
@@ -394,7 +394,6 @@ async def check_subscription_button(update: Update, context: ContextTypes.DEFAUL
     else:
         await query.answer("❌ لم يتم العثور على اشتراكك بعد. تأكد من الاشتراك ثم أعد المحاولة.", show_alert=True)
 
-# ======= دوال إحصائيات المستخدمين للمشرف =======
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id not in ADMIN_IDS:
@@ -451,11 +450,11 @@ def main():
     application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
     application.add_handler(CallbackQueryHandler(search_more_callback, pattern="^search_more$"))
     application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
-    application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
     application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
+
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
 
-    print("🤖 البوت بدأ بنجاح.")
+    print("🤖 بوت الأسعار يعمل الآن...")
     application.run_polling()
 
 if __name__ == "__main__":
