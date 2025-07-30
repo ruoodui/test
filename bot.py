@@ -11,7 +11,7 @@ from telegram import (
 )
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ConversationHandler, filters, ContextTypes
+    filters, ContextTypes
 )
 
 # ======= إعدادات =======
@@ -438,71 +438,21 @@ async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAUL
 
     await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
 
-COMPARE_FIRST, COMPARE_SECOND = range(2)
-
-async def compare_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await check_user_subscription(update.effective_user.id, context):
-        return await send_subscription_required(update)
-    await update.message.reply_text("📱 أرسل اسم الجهاز الأول للمقارنة:")
-    return COMPARE_FIRST
-
-async def compare_first(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    name = update.message.text.strip()
-    if name not in price_data:
-        await update.message.reply_text("❌ الجهاز الأول غير موجود. حاول مرة أخرى:")
-        return COMPARE_FIRST
-    context.user_data["compare_first"] = name
-    await update.message.reply_text("📱 أرسل اسم الجهاز الثاني للمقارنة:")
-    return COMPARE_SECOND
-
-async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    name = update.message.text.strip()
-    if name not in price_data:
-        await update.message.reply_text("❌ الجهاز الثاني غير موجود. حاول مرة أخرى:")
-        return COMPARE_SECOND
-    first = context.user_data["compare_first"]
-    second = name
-
-    msg = f"📊 مقارنة بين:\n\n{first} vs {second}\n\n"
-
-    for spec_key in ["price", "store", "location", "brand"]:
-        first_vals = [str(spec.get(spec_key, "—")) for spec in price_data[first]]
-        second_vals = [str(spec.get(spec_key, "—")) for spec in price_data[second]]
-        msg += f"\n* {spec_key.capitalize()}:\n"
-        msg += f"- {first}: {', '.join(first_vals)}\n"
-        msg += f"- {second}: {', '.join(second_vals)}\n"
-
-    await update.message.reply_text(msg, parse_mode="Markdown")
-    return ConversationHandler.END
-
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("تم الإلغاء.", reply_markup=main_menu_keyboard())
-    return ConversationHandler.END
-
 # ======= تسجيل المعالجات =======
 def main():
     application = Application.builder().token(TOKEN).build()
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("compare", compare_start)],
-        states={
-            COMPARE_FIRST: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_first)],
-            COMPARE_SECOND: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_second)],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-    )
-
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("stats", stats_command))
-    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^(search_by_|back_to_menu)$"))
+    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern=r"^(search_by_.*|back_to_menu)$"))
     application.add_handler(CallbackQueryHandler(show_brands, pattern="^search_by_brand$"))
     application.add_handler(CallbackQueryHandler(show_stores, pattern="^search_by_store$"))
     application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
     application.add_handler(CallbackQueryHandler(search_more_callback, pattern="^search_more$"))
     application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
     application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
+    application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
-    application.add_handler(conv_handler)
 
     print("Bot started...")
     application.run_polling()
