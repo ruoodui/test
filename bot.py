@@ -56,7 +56,6 @@ def load_excel_prices(path=PRICES_PATH):
             "price": str(row.get("السعر (price)", "")).strip(),
             "store": str(row.get("المتجر", "—")).strip(),
             "location": str(row.get("العنوان", "—")).strip(),
-            "memory": str(row.get("الذاكرة (memory)", "غير متوفر")).strip(),  # إضافة عمود الذاكرة
         })
     return phone_map
 
@@ -313,7 +312,6 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 msg = (
                     f"📱 {name}\n"
                     f"💰 السعر: {spec['price']}\n"
-                    f"💾 الذاكرة: {spec.get('memory', 'غير متوفر')}\n"  # عرض الذاكرة مع السعر
                     f"🏬 المتجر: {spec['store']}\n"
                     f"📍 العنوان: {spec['location']}\n"
                 )
@@ -346,7 +344,6 @@ async def device_option_callback(update: Update, context: ContextTypes.DEFAULT_T
         msg += (
             f"📱 {device_name}\n"
             f"💰 السعر: {spec['price']}\n"
-            f"💾 الذاكرة: {spec.get('memory', 'غير متوفر')}\n"  # عرض الذاكرة في تفاصيل الجهاز
             f"🏬 المتجر: {spec['store']}\n"
             f"📍 العنوان: {spec['location']}\n\n"
         )
@@ -443,49 +440,55 @@ async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg += f"📱 {first}:\n"
     for spec in price_data[first]:
-        msg += f"💰 السعر: {spec['price']}\n"
-        msg += f"💾 الذاكرة: {spec.get('memory', 'غير متوفر')}\n"
-        msg += f"🏬 المتجر: {spec['store']}\n"
-        msg += f"📍 العنوان: {spec['location']}\n\n"
+        msg += (
+            f"💰 السعر: {spec['price']}\n"
+            f"🏬 المتجر: {spec['store']}\n"
+            f"📍 العنوان: {spec['location']}\n"
+            f"🔗 {fuzzy_get_url(first)}\n\n"
+        )
 
     msg += f"📱 {second}:\n"
     for spec in price_data[second]:
-        msg += f"💰 السعر: {spec['price']}\n"
-        msg += f"💾 الذاكرة: {spec.get('memory', 'غير متوفر')}\n"
-        msg += f"🏬 المتجر: {spec['store']}\n"
-        msg += f"📍 العنوان: {spec['location']}\n\n"
+        msg += (
+            f"💰 السعر: {spec['price']}\n"
+            f"🏬 المتجر: {spec['store']}\n"
+            f"📍 العنوان: {spec['location']}\n"
+            f"🔗 {fuzzy_get_url(second)}\n\n"
+        )
 
     await update.message.reply_text(msg)
     return ConversationHandler.END
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ تم إلغاء العملية.")
+async def cancel_compare(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ تم إلغاء المقارنة.")
     return ConversationHandler.END
 
-# ======= تسجيل المعالجات =======
+# ======= نقاط الدخول =======
 def main():
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^(search_by_|back_to_menu|check_subscription|brand_|store_|device_)"))
-    application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_search_text))
-
     application.add_handler(CommandHandler("stats", stats_command))
+
+    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^(search_by_name|search_by_brand|search_by_store|search_by_price|back_to_menu)$"))
+    application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_).*"))
+    application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_.*$"))
+    application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
     application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
 
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
+
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("compare", compare_start)],
+        entry_points=[CommandHandler('compare', compare_start)],
         states={
-            COMPARE_FIRST: [MessageHandler(filters.TEXT & (~filters.COMMAND), compare_first)],
-            COMPARE_SECOND: [MessageHandler(filters.TEXT & (~filters.COMMAND), compare_second)],
+            COMPARE_FIRST: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_first)],
+            COMPARE_SECOND: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_second)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)]
+        fallbacks=[CommandHandler('cancel', cancel_compare)],
     )
     application.add_handler(conv_handler)
 
-    application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
-
-    print("🤖 Bot is running...")
+    print("🤖 بوت أسعار الهواتف يعمل الآن ...")
     application.run_polling()
 
 if __name__ == "__main__":
