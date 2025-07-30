@@ -21,7 +21,6 @@ URLS_PATH = os.path.join(BASE_DIR, "phones_urls.json")
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 TOKEN = os.getenv("TOKEN")
 CHANNEL_USERNAME = "@mitech808"
-INSTAGRAM_USERNAME = "mitech808"
 ADMIN_IDS = [193646746]
 
 # ======= دوال إدارة المستخدمين =======
@@ -86,17 +85,12 @@ def fuzzy_get_url(name):
     return "https://t.me/mitech808"
 
 # ======= الرسائل الثابتة =======
-def welcome_message(user):
-    return (
-        f"👋 مرحبًا بك في بوت أسعار الموبايلات!\n\n"
-        f"📱 معرفك في التيليجرام: {user.username or 'غير متوفر'}\n"
-        f"🆔 رقم التعريف الخاص بك: {user.id}\n"
-        f"📸 تابعنا على إنستغرام: https://www.instagram.com/{INSTAGRAM_USERNAME}\n"
-        f"📢 قناة التليغرام: {CHANNEL_USERNAME}\n\n"
-        "لإضافة متجرك للبوت، يرجى مراسلتنا عبر رقم الواتساب التالي:\n"
-        "07828816508\n\n"
-        "اختر طريقة البحث المناسبة لك من الأزرار أدناه:"
-    )
+WELCOME_MSG = (
+    "👋 مرحبًا بك في بوت أسعار الموبايلات!\n\n"
+    "لإضافة متجرك للبوت، يرجى مراسلتنا عبر رقم الواتساب التالي:\n"
+    "07828816508\n\n"
+    "اختر طريقة البحث المناسبة لك من الأزرار أدناه:"
+)
 
 BACK_TO_MENU = "back_to_menu"
 
@@ -126,25 +120,25 @@ async def check_user_subscription(user_id, context):
 async def send_subscription_required(update: Update):
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📢 انضم إلى قناتنا", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
-        [InlineKeyboardButton("📸 تابعنا على إنستغرام", url=f"https://www.instagram.com/{INSTAGRAM_USERNAME}")],
+        [InlineKeyboardButton("📸 تابعنا على إنستغرام", url="https://www.instagram.com/mitech808")],
         [InlineKeyboardButton("🔄 تحقق من الاشتراك", callback_data="check_subscription")]
     ])
     await update.message.reply_text(
         "🔒 يرجى الانضمام إلى قناتنا على تليغرام من أجل استخدام البوت 😍✅\n\n"
         f"📢 قناة التليغرام: {CHANNEL_USERNAME}\n"
-        f"📸 أيضًا يجب متابعة حساب الإنستغرام:\n"
-        f"https://www.instagram.com/{INSTAGRAM_USERNAME}\n\n"
+        "📸 أيضًا يجب متابعة حساب الإنستغرام:\n"
+        "https://www.instagram.com/mitech808\n\n"
         "✅ بعد الاشتراك، اضغط على /start للبدء الآن.",
         reply_markup=keyboard
     )
 
-# ======= /start مع عرض القائمة والبيانات الشخصية =======
+# ======= /start مع عرض القائمة =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if not await check_user_subscription(user.id, context):
+    user_id = update.effective_user.id
+    if not await check_user_subscription(user_id, context):
         return await send_subscription_required(update)
-    store_user(user)
-    await update.message.reply_text(welcome_message(user), reply_markup=main_menu_keyboard())
+    store_user(update.effective_user)
+    await update.message.reply_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
 
 # ======= عرض قائمة الماركات مع دعم زر المزيد =======
 def get_brands():
@@ -178,47 +172,14 @@ async def show_stores(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
     await query.edit_message_text("🏬 اختر المتجر:", reply_markup=InlineKeyboardMarkup(buttons))
 
-# ======= عرض نتائج البحث مع زر إظهار المزيد (تصفح بالصفحات) =======
-async def show_results_paginated(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0):
-    results = context.user_data.get("search_results", [])
-    items_per_page = 5
-    start = page * items_per_page
-    end = start + items_per_page
-    current_page_results = results[start:end]
-
-    if not current_page_results:
-        # لا توجد نتائج في الصفحة المطلوبة
-        if update.callback_query:
-            await update.callback_query.edit_message_text("❌ لا توجد نتائج إضافية.", reply_markup=back_to_menu_keyboard())
-        else:
-            await update.message.reply_text("❌ لا توجد نتائج إضافية.", reply_markup=back_to_menu_keyboard())
-        return
-
-    keyboard = []
-    text = ""
-    for name in current_page_results:
-        # عرض كل اسم مع زر اختيار التفاصيل
-        keyboard.append([InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")])
-        text += f"📱 {name}\n"
-
-    # زر إظهار المزيد إذا لم نصل لنهاية النتائج
-    if end < len(results):
-        keyboard.append([InlineKeyboardButton("📥 إظهار المزيد", callback_data=f"more_{page + 1}")])
-
-    keyboard.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
-
-    if update.callback_query:
-        await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
-    else:
-        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
-
-# ======= التعامل مع اختيار الماركة والمتجر =======
+# ======= التعامل مع اختيار الماركة مع صفحات النتائج =======
 async def brand_store_selected_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     data = query.data
 
     if data.startswith("brand_"):
+        # صيغة callback_data: brand_اسم_الماركة_رقم_الصفحة
         parts = data.split("_")
         brand = "_".join(parts[1:-1])
         page = int(parts[-1])
@@ -229,8 +190,23 @@ async def brand_store_selected_callback(update: Update, context: ContextTypes.DE
             await query.edit_message_text(f"❌ لا توجد أجهزة للماركة: {brand}", reply_markup=back_to_menu_keyboard())
             return
 
-        context.user_data['search_results'] = results
-        await show_results_paginated(update, context, page)
+        per_page = 10
+        start = page * per_page
+        end = start + per_page
+        page_results = results[start:end]
+
+        buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in page_results]
+
+        if end < len(results):
+            # زر المزيد للصفحة التالية
+            buttons.append([InlineKeyboardButton("المزيد ➕", callback_data=f"brand_{brand}_{page+1}")])
+
+        buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
+
+        await query.edit_message_text(
+            f"🏷️ أجهزة الماركة: {brand} (صفحة {page + 1})",
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
 
     elif data.startswith("store_"):
         store = data.replace("store_", "")
@@ -242,10 +218,6 @@ async def brand_store_selected_callback(update: Update, context: ContextTypes.DE
             reply_markup=back_to_menu_keyboard()
         )
 
-    elif data.startswith("more_"):
-        page = int(data.split("_")[1])
-        await show_results_paginated(update, context, page)
-
 # ======= التعامل مع أزرار القائمة الرئيسية =======
 async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -253,7 +225,7 @@ async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     data = query.data
 
     if data == BACK_TO_MENU:
-        await query.edit_message_text(welcome_message(update.effective_user), reply_markup=main_menu_keyboard())
+        await query.edit_message_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
         return
 
     if data == "search_by_brand":
@@ -282,7 +254,7 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
     results = []
 
     if mode == "name":
-        matches = process.extract(text, price_data.keys(), limit=50)
+        matches = process.extract(text, price_data.keys(), limit=10)
         for name, score in matches:
             if score >= 70:
                 results.append(name)
@@ -330,9 +302,32 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
         return
 
-    # خزّن النتائج في user_data للعرض مع زر إظهار المزيد
-    context.user_data['search_results'] = results
-    await show_results_paginated(update, context, page=0)
+    if mode == "price":
+        count = 0
+        for name in results[:10]:
+            for spec in price_data[name]:
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("📎 المواصفات", url=fuzzy_get_url(name))]
+                ])
+                msg = (
+                    f"📱 {name}\n"
+                    f"💰 السعر: {spec['price']}\n"
+                    f"🏬 المتجر: {spec['store']}\n"
+                    f"📍 العنوان: {spec['location']}\n"
+                )
+                await update.message.reply_text(msg, reply_markup=keyboard)
+                count += 1
+                if count >= 10:
+                    break
+            if count >= 10:
+                break
+        await update.message.reply_text("🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
+    else:
+        buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in results[:10]]
+        buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
+
+        keyboard = InlineKeyboardMarkup(buttons)
+        await update.message.reply_text(f"🔍 نتائج البحث عن '{text}':", reply_markup=keyboard)
 
 # ======= عرض تفاصيل الجهاز =======
 async def device_option_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -358,12 +353,12 @@ async def device_option_callback(update: Update, context: ContextTypes.DEFAULT_T
     ])
     await query.edit_message_text(msg, reply_markup=keyboard)
 
-# ======= باقي الوظائف =======
+# ======= باقي الوظائف كما في السكربت الأصلي =======
 async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if await check_user_subscription(query.from_user.id, context):
-        await query.edit_message_text("✅ تم التحقق! يمكنك الآن استخدام البوت.\n\n" + welcome_message(query.from_user), reply_markup=main_menu_keyboard())
+        await query.edit_message_text("✅ تم التحقق! يمكنك الآن استخدام البوت.\n\n" + WELCOME_MSG, reply_markup=main_menu_keyboard())
     else:
         await query.answer("❌ لم يتم العثور على اشتراكك بعد. تأكد من الاشتراك ثم أعد المحاولة.", show_alert=True)
 
@@ -434,39 +429,54 @@ async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return matches[0][0]
         return None
 
-    first_match = best_match(first_name)
-    second_match = best_match(second_name)
+    first = best_match(first_name)
+    second = best_match(second_name)
 
-    if not first_match or not second_match:
-        await update.message.reply_text("❌ لم أتمكن من العثور على أحد الجهازين. حاول مجددًا.")
+    if not first or not second:
+        await update.message.reply_text("❌ لم أتمكن من العثور على أحد الأجهزة. حاول كتابة الأسماء بشكل أدق.")
         return ConversationHandler.END
 
-    msg = f"🔍 مقارنة بين:\n\n📱 {first_match}\n📱 {second_match}\n\n"
+    msg = f"⚖️ مقارنة بين:\n\n"
 
-    for key in ['price', 'store', 'location']:
-        first_val = price_data.get(first_match, [{}])[0].get(key, "غير متوفر")
-        second_val = price_data.get(second_match, [{}])[0].get(key, "غير متوفر")
-        msg += f"{key.capitalize()}: {first_val} | {second_val}\n"
+    msg += f"📱 {first}:\n"
+    for spec in price_data[first]:
+        msg += (
+            f"💰 السعر: {spec['price']}\n"
+            f"🏬 المتجر: {spec['store']}\n"
+            f"📍 العنوان: {spec['location']}\n"
+            f"🔗 {fuzzy_get_url(first)}\n\n"
+        )
+
+    msg += f"📱 {second}:\n"
+    for spec in price_data[second]:
+        msg += (
+            f"💰 السعر: {spec['price']}\n"
+            f"🏬 المتجر: {spec['store']}\n"
+            f"📍 العنوان: {spec['location']}\n"
+            f"🔗 {fuzzy_get_url(second)}\n\n"
+        )
 
     await update.message.reply_text(msg)
     return ConversationHandler.END
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ تم إلغاء العملية.", reply_markup=main_menu_keyboard())
+async def cancel_compare(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ تم إلغاء المقارنة.")
     return ConversationHandler.END
 
-# ======= نقطة الدخول =======
+# ======= نقاط الدخول =======
 def main():
-    app = Application.builder().token(TOKEN).build()
+    application = Application.builder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("stats", stats_command))
-    app.add_handler(CallbackQueryHandler(main_menu_callback))
-    app.add_handler(CallbackQueryHandler(brand_store_selected_callback))
-    app.add_handler(CallbackQueryHandler(device_option_callback, pattern=r"device_"))
-    app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern=r"export_users_csv"))
-    app.add_handler(CallbackQueryHandler(check_subscription_button, pattern=r"check_subscription"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("stats", stats_command))
+
+    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^(search_by_name|search_by_brand|search_by_store|search_by_price|back_to_menu)$"))
+    application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_).*"))
+    application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_.*$"))
+    application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
+    application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
+
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('compare', compare_start)],
@@ -474,12 +484,12 @@ def main():
             COMPARE_FIRST: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_first)],
             COMPARE_SECOND: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_second)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[CommandHandler('cancel', cancel_compare)],
     )
-    app.add_handler(conv_handler)
+    application.add_handler(conv_handler)
 
-    print("🤖 البوت يعمل الآن ...")
-    app.run_polling()
+    print("🤖 بوت أسعار الهواتف يعمل الآن ...")
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
