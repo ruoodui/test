@@ -11,7 +11,7 @@ from telegram import (
 )
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    filters, ContextTypes
+    ConversationHandler, filters, ContextTypes
 )
 
 # ======= إعدادات =======
@@ -45,7 +45,7 @@ def store_user(user):
         }
         save_users(users)
 
-# ======= تحميل بيانات الأسعار =======
+# ======= تحميل بيانات الأسعار مع الماركات من العمود الصحيح =======
 def load_excel_prices(path=PRICES_PATH):
     df = pd.read_excel(path)
     df = df.dropna(subset=["الاسم (name)", "السعر (price)", "الماركه ( Brand )"])
@@ -80,6 +80,7 @@ def load_phone_urls(filepath=URLS_PATH):
 
 phone_urls = load_phone_urls()
 
+# ======= مطابقة غامضة للروابط =======
 def fuzzy_get_url(name):
     if name in phone_urls:
         return phone_urls[name]
@@ -88,7 +89,7 @@ def fuzzy_get_url(name):
         return phone_urls[matches[0][0]]
     return "https://t.me/mitech808"
 
-# ======= رسائل وأزرار =======
+# ======= الرسائل الثابتة =======
 WELCOME_MSG = (
     "👋 مرحبًا بك في بوت أسعار الموبايلات!\n\n"
     "لإضافة متجرك للبوت، يرجى مراسلتنا عبر رقم الواتساب التالي:\n"
@@ -98,6 +99,7 @@ WELCOME_MSG = (
 
 BACK_TO_MENU = "back_to_menu"
 
+# ======= أزرار القائمة الرئيسية =======
 def main_menu_keyboard():
     keyboard = [
         [InlineKeyboardButton("🔤 البحث عن طريق الاسم", callback_data="search_by_name")],
@@ -108,9 +110,10 @@ def main_menu_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 def back_to_menu_keyboard():
-    return InlineKeyboardMarkup([[InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)]])
+    keyboard = [[InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)]]
+    return InlineKeyboardMarkup(keyboard)
 
-# ======= تحقق الاشتراك =======
+# ======= التحقق من الاشتراك =======
 async def check_user_subscription(user_id, context):
     try:
         member = await context.bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
@@ -134,33 +137,13 @@ async def send_subscription_required(update: Update):
         reply_markup=keyboard
     )
 
-# ======= /start =======
+# ======= /start مع عرض القائمة =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_user_subscription(user_id, context):
         return await send_subscription_required(update)
     store_user(update.effective_user)
     await update.message.reply_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
-
-# ======= البحث وأزرار القوائم =======
-async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    data = query.data
-
-    if data == BACK_TO_MENU:
-        await query.edit_message_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
-        return
-
-    if data == "search_by_brand":
-        return await show_brands(update, context)
-    elif data == "search_by_store":
-        return await show_stores(update, context)
-    else:
-        await query.edit_message_text(f"✏️ الآن أرسل نص البحث لـ {data.replace('search_by_', '').replace('_', ' ')}:")
-        context.user_data['search_mode'] = data.replace("search_by_", "")
-        context.user_data['search_results'] = []
-        context.user_data['search_page'] = 0
 
 # ======= عرض قائمة الماركات =======
 def get_brands():
@@ -232,6 +215,26 @@ async def brand_store_selected_callback(update: Update, context: ContextTypes.DE
             "🔤 الآن أرسل اسم الجهاز للبحث ضمن هذا المتجر:",
             reply_markup=back_to_menu_keyboard()
         )
+
+# ======= التعامل مع أزرار القائمة الرئيسية =======
+async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    if data == BACK_TO_MENU:
+        await query.edit_message_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
+        return
+
+    if data == "search_by_brand":
+        return await show_brands(update, context)
+    elif data == "search_by_store":
+        return await show_stores(update, context)
+    else:
+        await query.edit_message_text(f"✏️ الآن أرسل نص البحث لـ {data.replace('search_by_', '').replace('_', ' ')}:")
+        context.user_data['search_mode'] = data.replace("search_by_", "")
+        context.user_data['search_results'] = []
+        context.user_data['search_page'] = 0
 
 # ======= عرض نتائج البحث مع دعم زر المزيد =======
 async def send_search_results_page(update, context, results, page=0, mode="name"):
@@ -329,8 +332,8 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
     results = list(dict.fromkeys(results))
 
     if not results:
-        await update.message.reply_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=
-        return await update.message.reply_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
+        await update.message.reply_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
+        return
 
     context.user_data['search_results'] = results
     context.user_data['search_page'] = 0
@@ -391,50 +394,10 @@ async def check_subscription_button(update: Update, context: ContextTypes.DEFAUL
     else:
         await query.answer("❌ لم يتم العثور على اشتراكك بعد. تأكد من الاشتراك ثم أعد المحاولة.", show_alert=True)
 
-# ======= أمر إحصائيات المستخدمين =======
-async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id not in ADMIN_IDS:
-        await update.message.reply_text("❌ هذا الأمر مخصص للمشرف فقط.")
-        return
-
-    users = load_users()
-    user_count = len(users)
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("⬇️ تصدير المستخدمين CSV", callback_data="export_users_csv")]
-    ])
-
-    await update.message.reply_text(
-        f"👥 عدد مستخدمي البوت: {user_count}",
-        reply_markup=keyboard
-    )
-
-async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    user_id = query.from_user.id
-    if user_id not in ADMIN_IDS:
-        await query.answer("❌ هذا الأمر مخصص للمشرف فقط.", show_alert=True)
-        return
-
-    users = load_users()
-    if not users:
-        await query.message.reply_text("❌ لا يوجد مستخدمون مسجلون حالياً.")
-        return
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["id", "name", "username"])
-    for user in users.values():
-        writer.writerow([user.get("id", ""), user.get("name", ""), user.get("username", "")])
-
-    output.seek(0)
-    bio = io.BytesIO(output.getvalue().encode("utf-8"))
-    bio.name = "users.csv"
-
-    await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
+# ======= إلغاء الأمر =======
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("تم الإلغاء.", reply_markup=main_menu_keyboard())
+    return ConversationHandler.END
 
 # ======= تسجيل المعالجات =======
 def main():
