@@ -306,31 +306,26 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         results.append(name)
                         break
 
-  elif mode == "price":
-    try:
-        target = int(text)
-        margin = 0.10
-        min_price = int(target * (1 - margin))
-        max_price = int(target * (1 + margin))
-        for name, specs in price_data.items():
-            for spec in specs:
-                try:
-                    price = int(str(spec['price']).replace(',', '').replace('٬', ''))
-                    if min_price <= price <= max_price:
-                        results.append(name)
-                        break
-                except ValueError:
-                    continue
-    except ValueError:
-        await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
-        return
+     elif mode == "price":
+        try:
+            target = int(text)
+            margin = 0.10
+            min_price = int(target * (1 - margin))
+            max_price = int(target * (1 + margin))
+            for name, specs in price_data.items():
+                for spec in specs:
+                    try:
+                        price_str = str(spec['price']).replace(',', '').replace('٬', '').replace('٫', '')
+                        price = int(price_str)
+                        if min_price <= price <= max_price:
+                            results.append(name)
+                            break
+                    except ValueError:
+                        continue
+        except ValueError:
+            await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
+            return
 
-
-    results = list(dict.fromkeys(results))
-
-    if not results:
-        await update.message.reply_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
-        return
 
     context.user_data['search_results'] = results
     context.user_data['search_page'] = 0
