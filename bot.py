@@ -306,30 +306,25 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         results.append(name)
                         break
 
-    elif mode == "price":
-        try:
-            # تنظيف النص من أي حروف غير رقمية
-            target = int(''.join(filter(str.isdigit, text)))
-            margin = 0.10  # هامش 10%
-            min_price = int(target * (1 - margin))
-            max_price = int(target * (1 + margin))
-            results = []
-            for name, specs in price_data.items():
-                for spec in specs:
-                    price_str = str(spec.get('price', '')).replace(',', '').replace('٬', '').strip()
-                    if not price_str.isdigit():
-                        continue
-                    price = int(price_str)
+  elif mode == "price":
+    try:
+        target = int(text)
+        margin = 0.10
+        min_price = int(target * (1 - margin))
+        max_price = int(target * (1 + margin))
+        for name, specs in price_data.items():
+            for spec in specs:
+                try:
+                    price = int(str(spec['price']).replace(',', '').replace('٬', ''))
                     if min_price <= price <= max_price:
                         results.append(name)
                         break
-        except ValueError:
-            await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
-            return
-
-    else:
-        await update.message.reply_text("⚠️ وضع البحث غير معروف أو غير مدعوم في البحث النصي حالياً.", reply_markup=back_to_menu_keyboard())
+                except ValueError:
+                    continue
+    except ValueError:
+        await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
         return
+
 
     results = list(dict.fromkeys(results))
 
