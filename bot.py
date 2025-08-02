@@ -287,23 +287,25 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         break
 
     elif mode == "price":
-        try:
-            target = int(text)
-            margin = 0.10
-            min_price = int(target * (1 - margin))
-            max_price = int(target * (1 + margin))
-            for name, specs in price_data.items():
-                for spec in specs:
-                    try:
-                        price = int(str(spec['price']).replace(',', '').replace('٬', ''))
-                        if min_price <= price <= max_price:
-                            results.append(name)
-                            break
-                    except ValueError:
-                        continue
-        except ValueError:
-            await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
-            return
+    try:
+        target = int(text.replace(',', '').replace('٬', '').strip())
+        margin = 0.10
+        min_price = int(target * (1 - margin))
+        max_price = int(target * (1 + margin))
+        for name, specs in price_data.items():
+            for spec in specs:
+                raw_price = str(spec['price']).replace(',', '').replace('٬', '').replace('.', '').replace(' ', '').strip()
+                try:
+                    price = int(raw_price)
+                except ValueError:
+                    continue
+                if min_price <= price <= max_price:
+                    results.append(name)
+                    break
+    except ValueError:
+        await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
+        return
+
 
     else:
         await update.message.reply_text("⚠️ وضع البحث غير معروف أو غير مدعوم في البحث النصي حالياً.", reply_markup=back_to_menu_keyboard())
