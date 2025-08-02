@@ -45,10 +45,10 @@ def store_user(user):
         }
         save_users(users)
 
-# ======= تحميل بيانات الأسعار =======
+# ======= تحميل بيانات الأسعار (تعديل عمود الماركة) =======
 def load_excel_prices(path=PRICES_PATH):
     df = pd.read_excel(path)
-    df = df.dropna(subset=["الاسم (name)", "السعر (price)"])
+    df = df.dropna(subset=["الاسم (name)", "السعر (price)", "الماركه ( Brand )"])
     phone_map = {}
     for _, row in df.iterrows():
         name = str(row["الاسم (name)"]).strip()
@@ -56,7 +56,7 @@ def load_excel_prices(path=PRICES_PATH):
             "price": str(row.get("السعر (price)", "")).strip(),
             "store": str(row.get("المتجر", "—")).strip(),
             "location": str(row.get("العنوان", "—")).strip(),
-            "brand": str(row.get("Brand", "")).strip()
+            "brand": str(row.get("الماركه ( Brand )", "")).strip()
         })
     return phone_map
 
