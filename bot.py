@@ -45,17 +45,19 @@ def store_user(user):
         }
         save_users(users)
 
-# ======= تحميل بيانات الأسعار =======
+# ======= تحميل بيانات الأسعار مع إضافة الماركة =======
 def load_excel_prices(path=PRICES_PATH):
     df = pd.read_excel(path)
-    df = df.dropna(subset=["الاسم (name)", "السعر (price)"])
+    df = df.dropna(subset=["الاسم (name)", "السعر (price)", "الماركه ( Brand )"])
     phone_map = {}
     for _, row in df.iterrows():
         name = str(row["الاسم (name)"]).strip()
+        brand = str(row["الماركه ( Brand )"]).strip()
         phone_map.setdefault(name, []).append({
             "price": str(row.get("السعر (price)", "")).strip(),
             "store": str(row.get("المتجر", "—")).strip(),
             "location": str(row.get("العنوان", "—")).strip(),
+            "brand": brand
         })
     return phone_map
 
@@ -143,9 +145,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ======= عرض قائمة الماركات مع دعم زر المزيد =======
 def get_brands():
     brands = set()
-    for name in price_data.keys():
-        brand = name.split()[0].strip()
-        brands.add(brand)
+    for specs_list in price_data.values():
+        for spec in specs_list:
+            brand = spec.get("brand")
+            if brand:
+                brands.add(brand)
     return sorted(brands)
 
 async def show_brands(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -172,20 +176,21 @@ async def show_stores(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
     await query.edit_message_text("🏬 اختر المتجر:", reply_markup=InlineKeyboardMarkup(buttons))
 
-# ======= التعامل مع اختيار الماركة مع صفحات النتائج =======
+# ======= التعامل مع اختيار الماركة والمتجر مع صفحات النتائج =======
 async def brand_store_selected_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     data = query.data
 
     if data.startswith("brand_"):
-        # صيغة callback_data: brand_اسم_الماركة_رقم_الصفحة
         parts = data.split("_")
         brand = "_".join(parts[1:-1])
         page = int(parts[-1])
 
-        # جلب الأجهزة التي تبدأ بالماركة
-        results = [name for name in price_data.keys() if name.lower().startswith(brand.lower())]
+        # جلب الأجهزة التي ماركتها تساوي الماركة المختارة
+        results = [name for name, specs_list in price_data.items() 
+                   if any(spec.get("brand", "").lower() == brand.lower() for spec in specs_list)]
+
         if not results:
             await query.edit_message_text(f"❌ لا توجد أجهزة للماركة: {brand}", reply_markup=back_to_menu_keyboard())
             return
@@ -198,7 +203,6 @@ async def brand_store_selected_callback(update: Update, context: ContextTypes.DE
         buttons = [[InlineKeyboardButton(f"📱 {name}", callback_data=f"device_{name}")] for name in page_results]
 
         if end < len(results):
-            # زر المزيد للصفحة التالية
             buttons.append([InlineKeyboardButton("المزيد ➕", callback_data=f"brand_{brand}_{page+1}")])
 
         buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
@@ -444,37 +448,30 @@ async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"💰 السعر: {spec['price']}\n"
             f"🏬 المتجر: {spec['store']}\n"
             f"📍 العنوان: {spec['location']}\n"
-            f"🔗 {fuzzy_get_url(first)}\n\n"
         )
-
-    msg += f"📱 {second}:\n"
+    msg += f"\n📱 {second}:\n"
     for spec in price_data[second]:
         msg += (
             f"💰 السعر: {spec['price']}\n"
             f"🏬 المتجر: {spec['store']}\n"
             f"📍 العنوان: {spec['location']}\n"
-            f"🔗 {fuzzy_get_url(second)}\n\n"
         )
-
     await update.message.reply_text(msg)
     return ConversationHandler.END
 
-async def cancel_compare(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ تم إلغاء المقارنة.")
+async def compare_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("تم إلغاء المقارنة.")
     return ConversationHandler.END
 
-# ======= نقاط الدخول =======
+# ======= ربط المعالجات =======
 def main():
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("stats", stats_command))
-
-    application.add_handler(CallbackQueryHandler(main_menu_callback, pattern="^(search_by_name|search_by_brand|search_by_store|search_by_price|back_to_menu)$"))
-    application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_).*"))
-    application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_.*$"))
-    application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
-    application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
+    application.add_handler(CallbackQueryHandler(main_menu_callback))
+    application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
+    application.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
+    application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="check_subscription"))
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
 
@@ -484,11 +481,15 @@ def main():
             COMPARE_FIRST: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_first)],
             COMPARE_SECOND: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_second)],
         },
-        fallbacks=[CommandHandler('cancel', cancel_compare)],
+        fallbacks=[CommandHandler('cancel', compare_cancel)]
     )
     application.add_handler(conv_handler)
 
-    print("🤖 بوت أسعار الهواتف يعمل الآن ...")
+    # أوامر أخرى حسب الحاجة مثل /stats
+    application.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="export_users_csv"))
+
+    print("بوت الهاتف جاهز للعمل!")
     application.run_polling()
 
 if __name__ == "__main__":
