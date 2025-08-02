@@ -48,16 +48,15 @@ def store_user(user):
 # ======= تحميل بيانات الأسعار =======
 def load_excel_prices(path=PRICES_PATH):
     df = pd.read_excel(path)
-    df = df.dropna(subset=["الاسم (name)", "السعر (price)", "الماركه ( Brand )"])
+    df = df.dropna(subset=["الاسم (name)", "السعر (price)"])
     phone_map = {}
     for _, row in df.iterrows():
         name = str(row["الاسم (name)"]).strip()
-        brand = str(row["الماركه ( Brand )"]).strip()
         phone_map.setdefault(name, []).append({
             "price": str(row.get("السعر (price)", "")).strip(),
             "store": str(row.get("المتجر", "—")).strip(),
             "location": str(row.get("العنوان", "—")).strip(),
-            "brand": brand
+            "brand": str(row.get("Brand", "")).strip()
         })
     return phone_map
 
@@ -145,9 +144,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ======= عرض قائمة الماركات مع دعم زر المزيد =======
 def get_brands():
     brands = set()
-    for specs_list in price_data.values():
+    for name, specs_list in price_data.items():
         for spec in specs_list:
-            brands.add(spec.get("brand", "").strip())
+            brand = spec.get("brand", "")
+            if brand:
+                brands.add(brand)
     return sorted(brands)
 
 async def show_brands(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -174,7 +175,7 @@ async def show_stores(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
     await query.edit_message_text("🏬 اختر المتجر:", reply_markup=InlineKeyboardMarkup(buttons))
 
-# ======= التعامل مع اختيار الماركة والمتجر مع صفحات النتائج =======
+# ======= التعامل مع اختيار الماركة مع صفحات النتائج =======
 async def brand_store_selected_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -182,12 +183,15 @@ async def brand_store_selected_callback(update: Update, context: ContextTypes.DE
 
     if data.startswith("brand_"):
         parts = data.split("_")
-        brand = "_".join(parts[1:-1]).strip()
+        brand = "_".join(parts[1:-1])
         page = int(parts[-1])
 
-        # جلب الأجهزة التي تنتمي للماركة (مطابقة غير حساسة لحالة الحروف)
-        results = [name for name, specs_list in price_data.items()
-                   if any(spec.get("brand", "").lower() == brand.lower() for spec in specs_list)]
+        results = []
+        for name, specs_list in price_data.items():
+            for spec in specs_list:
+                if spec.get("brand", "").lower() == brand.lower():
+                    results.append(name)
+                    break
 
         if not results:
             await query.edit_message_text(f"❌ لا توجد أجهزة للماركة: {brand}", reply_markup=back_to_menu_keyboard())
@@ -261,17 +265,6 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
             if score >= 70:
                 results.append(name)
 
-    elif mode == "brand":
-        matches = []
-        brand_text = text.lower()
-        for name, specs_list in price_data.items():
-            for spec in specs_list:
-                brand = spec.get("brand", "").lower()
-                if brand_text in brand:
-                    matches.append(name)
-                    break
-        results = list(dict.fromkeys(matches))
-
     elif mode == "store_name":
         store = context.user_data.get('selected_store')
         if not store:
@@ -287,29 +280,30 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         break
 
     elif mode == "price":
-    try:
-        target = int(text.replace(',', '').replace('٬', '').strip())
-        margin = 0.10
-        min_price = int(target * (1 - margin))
-        max_price = int(target * (1 + margin))
-        for name, specs in price_data.items():
-            for spec in specs:
-                raw_price = str(spec['price']).replace(',', '').replace('٬', '').replace('.', '').replace(' ', '').strip()
-                try:
-                    price = int(raw_price)
-                except ValueError:
-                    continue
-                if min_price <= price <= max_price:
-                    results.append(name)
-                    break
-    except ValueError:
-        await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
-        return
-
+        try:
+            target = int(text.replace(',', '').replace('٬', '').strip())
+            margin = 0.10
+            min_price = int(target * (1 - margin))
+            max_price = int(target * (1 + margin))
+            for name, specs in price_data.items():
+                for spec in specs:
+                    raw_price = str(spec['price']).replace(',', '').replace('٬', '').replace('.', '').replace(' ', '').strip()
+                    try:
+                        price = int(raw_price)
+                    except ValueError:
+                        continue
+                    if min_price <= price <= max_price:
+                        results.append(name)
+                        break
+        except ValueError:
+            await update.message.reply_text("⚠️ يرجى إدخال رقم صالح للبحث بالسعر.", reply_markup=back_to_menu_keyboard())
+            return
 
     else:
         await update.message.reply_text("⚠️ وضع البحث غير معروف أو غير مدعوم في البحث النصي حالياً.", reply_markup=back_to_menu_keyboard())
         return
+
+    results = list(dict.fromkeys(results))
 
     if not results:
         await update.message.reply_text("❌ لم أجد نتائج مطابقة.\n🔙 يمكنك العودة للقائمة الرئيسية.", reply_markup=back_to_menu_keyboard())
@@ -366,7 +360,7 @@ async def device_option_callback(update: Update, context: ContextTypes.DEFAULT_T
     ])
     await query.edit_message_text(msg, reply_markup=keyboard)
 
-# ======= باقي الوظائف كما في السكربت الأصلي =======
+# ======= باقي الوظائف =======
 async def check_subscription_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -459,39 +453,43 @@ async def compare_second(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for spec in price_data[second]:
         msg += f"💰 السعر: {spec['price']}\n🏬 المتجر: {spec['store']}\n📍 العنوان: {spec['location']}\n\n"
 
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)]
-    ])
-    await update.message.reply_text(msg, reply_markup=keyboard)
+    msg += "🔗 الروابط:\n"
+    msg += f"{first}: {fuzzy_get_url(first)}\n"
+    msg += f"{second}: {fuzzy_get_url(second)}\n"
+
+    await update.message.reply_text(msg, reply_markup=back_to_menu_keyboard())
     return ConversationHandler.END
 
-# ======= تسجيل معالجات الأوامر والأحداث =======
+async def cancel_compare(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("تم إلغاء المقارنة.", reply_markup=back_to_menu_keyboard())
+    return ConversationHandler.END
+
+# ======= إعداد التطبيق والربط =======
 def main():
-    app = Application.builder().token(TOKEN).build()
+    application = Application.builder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(main_menu_callback))
+    application.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern=r"^(brand_|store_)"))
+    application.add_handler(CallbackQueryHandler(device_option_callback, pattern=r"^device_"))
+    application.add_handler(CallbackQueryHandler(check_subscription_button, pattern="check_subscription"))
 
-    app.add_handler(CallbackQueryHandler(main_menu_callback, pattern=f"^(search_by_|{BACK_TO_MENU})"))
-    app.add_handler(CallbackQueryHandler(brand_store_selected_callback, pattern="^(brand_|store_)"))
-    app.add_handler(CallbackQueryHandler(device_option_callback, pattern="^device_"))
-    app.add_handler(CallbackQueryHandler(check_subscription_button, pattern="^check_subscription$"))
-    app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
 
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
-
-    compare_handler = ConversationHandler(
+    conv_handler = ConversationHandler(
         entry_points=[CommandHandler('compare', compare_start)],
         states={
             COMPARE_FIRST: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_first)],
-            COMPARE_SECOND: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_second)],
+            COMPARE_SECOND: [MessageHandler(filters.TEXT & ~filters.COMMAND, compare_second)]
         },
-        fallbacks=[]
+        fallbacks=[CommandHandler('cancel', cancel_compare)]
     )
-    app.add_handler(compare_handler)
+    application.add_handler(conv_handler)
 
-    print("Bot started...")
-    app.run_polling()
+    application.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="export_users_csv"))
+
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
