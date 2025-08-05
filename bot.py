@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import pandas as pd
 from thefuzz import process
 
@@ -41,6 +42,19 @@ phone_specs = {}
 for category in raw_specs.values():
     for item in category:
         phone_specs[item["name"].strip()] = item["url"]
+
+# ======= دالة استخراج الاسم الأساسي =======
+def extract_base_name(full_name):
+    """
+    تأخذ الاسم الكامل وتستخرج الاسم الأساسي بدون تفاصيل الذاكرة أو اللون.
+    مثلاً "Redmi Pad 2 8/256GB (Mint Green)" تصبح "Redmi Pad 2"
+    """
+    pattern = r"\b\d{1,2}/\d{3}\b"
+    match = re.search(pattern, full_name)
+    if match:
+        return full_name[:match.start()].strip()
+    else:
+        return full_name.strip()
 
 # ======= دوال إدارة المستخدمين =======
 def load_users():
@@ -88,7 +102,7 @@ async def send_subscription_required(update: Update):
         reply_markup=keyboard
     )
 
-# ======= /start =======
+# ======= عرض القائمة الرئيسية للمستخدم (رسالة جديدة) =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     subscribed = await check_user_subscription(user_id, context)
@@ -104,6 +118,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("💰 البحث بالسعر", callback_data='search_price')]
     ]
     await update.message.reply_text(
+        WELCOME_MSG,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+# ======= عرض القائمة الرئيسية للمستخدم (تحديث رسالة زر) =======
+async def show_main_menu_callback(query, context):
+    keyboard = [
+        [InlineKeyboardButton("🔍 البحث بالاسم", callback_data='search_name')],
+        [InlineKeyboardButton("🏬 البحث بالمتجر", callback_data='search_store')],
+        [InlineKeyboardButton("💰 البحث بالسعر", callback_data='search_price')]
+    ]
+    await query.message.edit_text(
         WELCOME_MSG,
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
@@ -142,7 +168,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.edit_text(f"📍 المتجر المحدد: {store}\n\n🔍 أرسل اسم الجهاز للبحث داخل هذا المتجر:")
 
     elif data == BACK_TO_MENU:
-        await start(update, context)
+        await show_main_menu_callback(query, context)
 
     elif data.startswith("specs:"):
         index = int(data.split(":")[1])
@@ -192,9 +218,11 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if mode == 'name':
         names = df["الاسم (name)"].dropna().tolist()
-        matches = process.extract(text, names, limit=10)
+        base_names = [extract_base_name(n) for n in names]
+        base_text = extract_base_name(text)
 
-        matched_names = [match[0] for match in matches if match[1] > 80]
+        matches = process.extract(base_text, base_names, limit=10)
+        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 80]
 
         if matched_names:
             results = df[df["الاسم (name)"].isin(matched_names)]
@@ -227,9 +255,11 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         names = df[df["المتجر"] == store]["الاسم (name)"].dropna().tolist()
-        matches = process.extract(text, names, limit=10)
+        base_names = [extract_base_name(n) for n in names]
+        base_text = extract_base_name(text)
 
-        matched_names = [match[0] for match in matches if match[1] > 80]
+        matches = process.extract(base_text, base_names, limit=10)
+        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 80]
 
         if matched_names:
             results = df[(df["المتجر"] == store) & (df["الاسم (name)"].isin(matched_names))]
