@@ -162,6 +162,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await query.answer("❌ أنت غير مشترك بعد، يرجى الاشتراك أولاً.", show_alert=True)
 
+    elif data.startswith("search_exact:"):
+        device_name = data.split(":", 1)[1]
+        results = df[df["الاسم (name)"] == device_name]
+        await show_results(query.message, results)
+
 # ======= معالجة الرسائل =======
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -179,9 +184,23 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if mode == 'name':
         names = df["الاسم (name)"].dropna().tolist()
-        match, score = process.extractOne(text, names)
-        results = df[df["الاسم (name)"] == match] if score > 60 else pd.DataFrame()
-        await show_results(update.message, results)
+        matches = process.extract(text, names, limit=5)  # أفضل 5 اقتراحات
+
+        matched_names = [match[0] for match in matches if match[1] > 60]
+
+        if matched_names:
+            results = df[df["الاسم (name)"].isin(matched_names)]
+            await show_results(update.message, results)
+        else:
+            keyboard = [
+                [InlineKeyboardButton(name, callback_data=f"search_exact:{name}")] for name, score in matches
+            ]
+            keyboard.append([InlineKeyboardButton("🔙 رجوع", callback_data=BACK_TO_MENU)])
+
+            await update.message.reply_text(
+                "⚠️ لم نعثر على نتائج مطابقة، هل تقصد أحد الأجهزة التالية؟",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
 
     elif mode == 'price':
         try:
