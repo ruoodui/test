@@ -123,19 +123,23 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == 'search_name':
         await query.message.edit_text("أرسل اسم الجهاز:")
+        context.user_data.clear()
         context.user_data['mode'] = 'name'
 
     elif data == 'search_store':
+        context.user_data.clear()
         await list_stores(update, context)
 
     elif data == 'search_price':
         await query.message.edit_text("أرسل السعر المطلوب (بالأرقام فقط):")
+        context.user_data.clear()
         context.user_data['mode'] = 'price'
 
     elif data.startswith("store:"):
         store = data.split(":", 1)[1]
-        results = df[df["المتجر"] == store]
-        await show_results(query.message, results)
+        context.user_data['mode'] = 'store_name'  # وضع خاص للبحث بالاسم داخل المتجر
+        context.user_data['store'] = store
+        await query.message.edit_text(f"📍 المتجر المحدد: {store}\n\n🔍 أرسل اسم الجهاز للبحث داخل هذا المتجر:")
 
     elif data == BACK_TO_MENU:
         await start(update, context)
@@ -145,8 +149,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         row = df.iloc[index]
         name = row["الاسم (name)"].strip()
 
-        url = phone_specs.get(name)
-        if url:
+        # بحث تقريبي عن رابط المواصفات
+        all_spec_names = list(phone_specs.keys())
+        match, score = process.extractOne(name, all_spec_names)
+
+        if score > 80:  # عتبة التشابه 80%
+            url = phone_specs.get(match)
             text = f"""📱 <b>{name}</b>\n📎 <a href="{url}">اضغط هنا لعرض المواصفات الكاملة</a>"""
         else:
             search_url = f"https://www.google.com/search?q={name.replace(' ', '+')}+site:gsmarena.com"
@@ -184,9 +192,9 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if mode == 'name':
         names = df["الاسم (name)"].dropna().tolist()
-        matches = process.extract(text, names, limit=5)  # أفضل 5 اقتراحات
+        matches = process.extract(text, names, limit=10)
 
-        matched_names = [match[0] for match in matches if match[1] > 60]
+        matched_names = [match[0] for match in matches if match[1] > 80]
 
         if matched_names:
             results = df[df["الاسم (name)"].isin(matched_names)]
@@ -211,6 +219,31 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await show_results(update.message, results)
         except ValueError:
             await update.message.reply_text("❌ السعر غير صالح. أرسل رقماً فقط.")
+
+    elif mode == 'store_name':
+        store = context.user_data.get('store')
+        if not store:
+            await update.message.reply_text("❌ حدث خطأ، يرجى إعادة اختيار المتجر.")
+            return
+
+        names = df[df["المتجر"] == store]["الاسم (name)"].dropna().tolist()
+        matches = process.extract(text, names, limit=10)
+
+        matched_names = [match[0] for match in matches if match[1] > 80]
+
+        if matched_names:
+            results = df[(df["المتجر"] == store) & (df["الاسم (name)"].isin(matched_names))]
+            await show_results(update.message, results)
+        else:
+            keyboard = [
+                [InlineKeyboardButton(name, callback_data=f"search_exact:{name}")] for name, score in matches
+            ]
+            keyboard.append([InlineKeyboardButton("🔙 رجوع", callback_data=BACK_TO_MENU)])
+
+            await update.message.reply_text(
+                f"⚠️ لم نعثر على نتائج مطابقة في متجر {store}، هل تقصد أحد الأجهزة التالية؟",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
 
 # ======= عرض النتائج =======
 async def show_results(msg, results):
