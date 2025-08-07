@@ -43,6 +43,9 @@ for category in raw_specs.values():
     for item in category:
         phone_specs[item["name"].strip()] = item["url"]
 
+# دمج الاسم مع الرام والذاكره لسهولة البحث
+df['full_name'] = df['الاسم (name)'].str.strip() + " " + df['الرام والذاكره'].str.strip()
+
 # ======= دالة استخراج الاسم الأساسي =======
 def extract_base_name(full_name):
     """
@@ -198,7 +201,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("search_exact:"):
         device_name = data.split(":", 1)[1]
-        results = df[df["الاسم (name)"] == device_name]
+        results = df[df["full_name"] == device_name]
         await show_results(query.message, results)
 
 # ======= معالجة الرسائل =======
@@ -217,7 +220,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
     if mode == 'name':
-        names = df["الاسم (name)"].dropna().tolist()
+        names = df["full_name"].dropna().tolist()
         base_names = [extract_base_name(n) for n in names]
         base_text = extract_base_name(text)
 
@@ -225,7 +228,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 80]
 
         if matched_names:
-            results = df[df["الاسم (name)"].isin(matched_names)]
+            results = df[df["full_name"].isin(matched_names)]
             await show_results(update.message, results)
         else:
             keyboard = [
@@ -254,7 +257,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ حدث خطأ، يرجى إعادة اختيار المتجر.")
             return
 
-        names = df[df["المتجر"] == store]["الاسم (name)"].dropna().tolist()
+        names = df[df["المتجر"] == store]["full_name"].dropna().tolist()
         base_names = [extract_base_name(n) for n in names]
         base_text = extract_base_name(text)
 
@@ -262,7 +265,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 80]
 
         if matched_names:
-            results = df[(df["المتجر"] == store) & (df["الاسم (name)"].isin(matched_names))]
+            results = df[(df["المتجر"] == store) & (df["full_name"].isin(matched_names))]
             await show_results(update.message, results)
         else:
             keyboard = [
@@ -275,24 +278,28 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
 
-# ======= عرض النتائج =======
+# ======= عرض النتائج (تم التعديل ليشمل كل الأعمدة) =======
 async def show_results(msg, results):
     if results.empty:
         await msg.reply_text("❌ لم يتم العثور على نتائج.")
         return
 
     for idx, row in results.iterrows():
-        name = row["الاسم (name)"]
-        price = row["السعر (price)"]
+        name = row.get("الاسم (name)", "")
+        ram_storage = row.get("الرام والذاكره", "")
+        price = row.get("السعر (price)", 0)
         brand = row.get("ماركه ( Brand )", "")
-        store = row["المتجر"]
-        address = row["العنوان"]
+        store = row.get("المتجر", "")
+        address = row.get("العنوان", "")
 
-        text = f"""📱 <b>{name}</b>
-💰 السعر: {price:,.0f}
-🏷️ الماركة: {brand}
-🏬 المتجر: {store}
-📍 العنوان: {address}"""
+        text = (
+            f"📱 <b>{name}</b>\n"
+            f"💾 الرام والذاكرة: {ram_storage}\n"
+            f"💰 السعر: {price:,.0f} IQD\n"
+            f"🏷️ الماركة: {brand}\n"
+            f"🏬 المتجر: {store}\n"
+            f"📍 العنوان: {address}"
+        )
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("🔎 عرض المواصفات", callback_data=f"specs:{idx}")]
