@@ -225,19 +225,23 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         base_text = extract_base_name(text)
 
         matches = process.extract(base_text, base_names, limit=10)
-        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 85]  # تعديل هنا
+        # نسبة المطابقة 95%
+        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score >= 95]
 
         if matched_names:
             results = df[df["full_name"].isin(matched_names)]
             await show_results(update.message, results)
         else:
+            # عرض أفضل 5 اقتراحات حتى لو أقل من 95%
+            suggestions = matches[:5]
             keyboard = [
-                [InlineKeyboardButton(name, callback_data=f"search_exact:{name}")] for name, score in matches
+                [InlineKeyboardButton(names[i], callback_data=f"search_exact:{names[i]}")] 
+                for i, (name, score) in enumerate(suggestions)
             ]
             keyboard.append([InlineKeyboardButton("🔙 رجوع", callback_data=BACK_TO_MENU)])
 
             await update.message.reply_text(
-                "⚠️ لم نعثر على نتائج مطابقة، هل تقصد أحد الأجهزة التالية؟",
+                "⚠️ لم نعثر على نتائج مطابقة دقيقة، هل تقصد أحد الأجهزة التالية؟",
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
 
@@ -262,23 +266,25 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         base_text = extract_base_name(text)
 
         matches = process.extract(base_text, base_names, limit=10)
-        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 85]  # تعديل هنا أيضاً
+        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score >= 95]
 
         if matched_names:
             results = df[(df["المتجر"] == store) & (df["full_name"].isin(matched_names))]
             await show_results(update.message, results)
         else:
+            suggestions = matches[:5]
             keyboard = [
-                [InlineKeyboardButton(name, callback_data=f"search_exact:{name}")] for name, score in matches
+                [InlineKeyboardButton(names[i], callback_data=f"search_exact:{names[i]}")] 
+                for i, (name, score) in enumerate(suggestions)
             ]
             keyboard.append([InlineKeyboardButton("🔙 رجوع", callback_data=BACK_TO_MENU)])
 
             await update.message.reply_text(
-                f"⚠️ لم نعثر على نتائج مطابقة في متجر {store}، هل تقصد أحد الأجهزة التالية؟",
+                f"⚠️ لم نعثر على نتائج مطابقة دقيقة في متجر {store}، هل تقصد أحد الأجهزة التالية؟",
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
 
-# ======= عرض النتائج (تم التعديل ليشمل كل الأعمدة) =======
+# ======= عرض النتائج =======
 async def show_results(msg, results):
     if results.empty:
         await msg.reply_text("❌ لم يتم العثور على نتائج.")
