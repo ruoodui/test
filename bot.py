@@ -182,7 +182,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         all_spec_names = list(phone_specs.keys())
         match, score = process.extractOne(name, all_spec_names)
 
-        if score > 80:  # عتبة التشابه 80%
+        if score > 80:  # عتبة التشابه 80% للروابط
             url = phone_specs.get(match)
             text = f"""📱 <b>{name}</b>\n📎 <a href="{url}">اضغط هنا لعرض المواصفات الكاملة</a>"""
         else:
@@ -225,7 +225,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         base_text = extract_base_name(text)
 
         matches = process.extract(base_text, base_names, limit=10)
-        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 80]
+        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 85]  # تعديل هنا
 
         if matched_names:
             results = df[df["full_name"].isin(matched_names)]
@@ -262,7 +262,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         base_text = extract_base_name(text)
 
         matches = process.extract(base_text, base_names, limit=10)
-        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 80]
+        matched_names = [names[i] for i, (match, score) in enumerate(matches) if score > 85]  # تعديل هنا أيضاً
 
         if matched_names:
             results = df[(df["المتجر"] == store) & (df["full_name"].isin(matched_names))]
