@@ -210,5 +210,4 @@ def main():
     application.run_polling()
 
 if __name__ == "__main__":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     main()
