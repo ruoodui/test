@@ -18,7 +18,7 @@ PRICES_PATH = os.path.join(BASE_DIR, "prices.xlsx")
 URLS_PATH = os.path.join(BASE_DIR, "phones_urls.json")
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 
-TOKEN = os.getenv("TOKEN")  # يجب ضبط متغير البيئة TOKEN قبل التشغيل
+TOKEN = os.getenv("TOKEN")  # تأكد من ضبط متغير البيئة TOKEN قبل التشغيل
 CHANNEL_USERNAME = "@mitech808"
 ADMIN_IDS = [193646746]
 
@@ -195,6 +195,7 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CHOOSING
 
 async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("name_selection_handler triggered")  # للتتبع
     query = update.callback_query
     await query.answer()
     _, selected_name = query.data.split("::", 1)
@@ -207,7 +208,9 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
     else:
         for _, row in results.iterrows():
             name_lower = row['name'].lower()
-            url = url_map.get(name_lower)
+            best_match = process.extractOne(name_lower, url_map.keys(), scorer=fuzz.token_sort_ratio)
+            url = url_map[best_match[0]] if best_match and best_match[1] >= 90 else None
+
             text = (
                 f"📱 الاسم: {row['name']}\n"
                 f"💾 الرام والذاكرة: {row['ram_memory']}\n"
@@ -230,7 +233,9 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
 
     for _, row in results.iterrows():
         name_lower = row['name'].lower()
-        url = url_map.get(name_lower)
+        best_match = process.extractOne(name_lower, url_map.keys(), scorer=fuzz.token_sort_ratio)
+        url = url_map[best_match[0]] if best_match and best_match[1] >= 90 else None
+
         text = (
             f"📱 الاسم: {row['name']}\n"
             f"💾 الرام والذاكرة: {row['ram_memory']}\n"
