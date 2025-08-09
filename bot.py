@@ -5,7 +5,7 @@ from thefuzz import process
 
 from telegram import (
     Update, InlineKeyboardButton, InlineKeyboardMarkup,
-    ReplyKeyboardMarkup, ReplyKeyboardRemove
+    ReplyKeyboardRemove
 )
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
@@ -18,11 +18,11 @@ PRICES_PATH = os.path.join(BASE_DIR, "prices.xlsx")
 URLS_PATH = os.path.join(BASE_DIR, "phones_urls.json")
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 
-TOKEN = os.getenv("TOKEN")  # ضبط متغير البيئة TOKEN قبل التشغيل
+TOKEN = os.getenv("TOKEN")  # يجب ضبط متغير البيئة TOKEN قبل التشغيل
 CHANNEL_USERNAME = "@mitech808"
 ADMIN_IDS = [193646746]
 
-# ======= تحقق وجود الملفات =======
+# ======= التحقق من وجود الملفات =======
 if not os.path.exists(PRICES_PATH):
     raise FileNotFoundError(f"❌ ملف الأسعار غير موجود: {PRICES_PATH}")
 if not os.path.exists(URLS_PATH):
@@ -63,37 +63,35 @@ df.rename(columns={
     'العنوان': 'address'
 }, inplace=True)
 
-# تحويل السعر لرقم float بعد إزالة الفواصل
+# تنظيف عمود السعر
 df['price'] = df['price'].astype(str).str.replace(',', '').astype(float)
 
-# تحميل روابط المواصفات
 with open(URLS_PATH, encoding='utf-8') as f:
     phones_urls_data = json.load(f)
 
 url_map = {}
-url_names = []
 for brand_group in phones_urls_data.values():
     for device in brand_group:
-        name_lower = device['name'].lower()
-        url_names.append(name_lower)
-        url_map[name_lower] = device['url']
+        url_map[device['name'].lower()] = device['url']
 
 # ======= حالات الحوار =======
 CHOOSING, TYPING_NAME, SELECTING_STORE, TYPING_PRICE = range(4)
 
+# أزرار البحث التفاعلية
 search_keyboard = [
-    ["بحث بالاسم"],
-    ["بحث بالمتجر"],
-    ["بحث بالسعر"]
+    [
+        InlineKeyboardButton("بحث بالاسم", callback_data="search_name"),
+        InlineKeyboardButton("بحث بالمتجر", callback_data="search_store"),
+        InlineKeyboardButton("بحث بالسعر", callback_data="search_price"),
+    ]
 ]
-search_markup = ReplyKeyboardMarkup(search_keyboard, one_time_keyboard=True, resize_keyboard=True)
+search_markup = InlineKeyboardMarkup(search_keyboard)
 
-# دالة لجلب قائمة المتاجر بدون تكرار
+# ======= دوال مساعدة =======
 def get_unique_stores():
     return sorted(df['store'].dropna().unique().tolist())
 
-# ======= دوال التعامل مع البوت =======
-
+# ======= دوال البوت =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     store_user(update.effective_user)
     await update.message.reply_text(
@@ -102,46 +100,115 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return CHOOSING
 
-async def choosing(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+async def search_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    choice = query.data
 
-    if text == "بحث بالاسم":
-        await update.message.reply_text("أرسل اسم الهاتف أو جزء منه:", reply_markup=ReplyKeyboardRemove())
+    if choice == "search_name":
+        await query.edit_message_text("أرسل اسم الهاتف أو جزء منه:")
         return TYPING_NAME
 
-    elif text == "بحث بالمتجر":
-        # عرض قائمة المتاجر كأزرار تفاعلية
+    elif choice == "search_store":
         stores = get_unique_stores()
         keyboard = [[InlineKeyboardButton(store, callback_data=f"store_select::{store}")] for store in stores]
         reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await update.message.reply_text("اختر المتجر من القائمة:", reply_markup=reply_markup)
+        await query.edit_message_text("اختر المتجر من القائمة:", reply_markup=reply_markup)
         return SELECTING_STORE
 
-    elif text == "بحث بالسعر":
-        await update.message.reply_text("أرسل السعر المطلوب (رقم فقط):", reply_markup=ReplyKeyboardRemove())
+    elif choice == "search_price":
+        await query.edit_message_text("أرسل السعر المطلوب (رقم فقط):")
         return TYPING_PRICE
 
+async def store_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+    _, selected_store = data.split("::", 1)
+
+    # حفظ المتجر في context لبحث لاحق بالاسم ضمن المتجر
+    context.user_data['selected_store'] = selected_store
+    await query.edit_message_text(f"أنت تختار البحث في المتجر: {selected_store}\n\nأرسل اسم الهاتف أو جزء منه للبحث:")
+    return TYPING_NAME
+
+async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query_text = update.message.text.lower()
+    selected_store = context.user_data.get('selected_store')
+
+    if selected_store:
+        # بحث ضمن المتجر المختار
+        filtered_df = df[df['store'].str.lower() == selected_store.lower()]
     else:
-        await update.message.reply_text("الرجاء اختيار أحد الخيارات.")
+        filtered_df = df
+
+    names_list = filtered_df['name'].tolist()
+
+    matches = process.extract(query_text, names_list, limit=10)
+    good_matches = [match for match in matches if match[1] >= 85]
+
+    if good_matches:
+        matched_names = [match[0] for match in good_matches]
+        results = filtered_df[filtered_df['name'].isin(matched_names)]
+        return await send_results(update, context, results)
+    else:
+        top_matches = [match[0] for match in matches[:5]]
+        keyboard = [[InlineKeyboardButton(name, callback_data=f"name_select::{name}")] for name in top_matches]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            "لم أجد تطابقًا دقيقًا، هل تقصد أحد هذه الهواتف؟ اختر من القائمة:",
+            reply_markup=reply_markup
+        )
         return CHOOSING
 
-# بناء رسائل نتائج البحث مع زر المواصفات (رابط أو زر تفاعلي)
-async def build_response_with_buttons(results):
-    responses = []
-    for _, row in results.iterrows():
-        device_name = row['name']
-        device_name_lower = device_name.lower()
+async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
 
-        # تطابق اسم الجهاز مع أسماء الروابط
-        match = process.extractOne(device_name_lower, url_names)
-        url = None
-        if match and match[1] >= 90:
-            matched_name = match[0]
-            url = url_map.get(matched_name)
+    data = query.data
+    _, selected_name = data.split("::", 1)
+
+    results = df[df['name'] == selected_name]
+    if results.empty:
+        await query.edit_message_text("لم أتمكن من إيجاد معلومات عن هذا الجهاز.")
+    else:
+        for _, row in results.iterrows():
+            name_lower = row['name'].lower()
+            url = url_map.get(name_lower)
+
+            text = (
+                f"📱 الاسم: {row['name']}\n"
+                f"💾 الرام والذاكرة: {row['ram_memory']}\n"
+                f"💰 السعر: {row['price']:,} د.ع\n"
+                f"🏷️ الماركة: {row['brand']}\n"
+                f"🏪 المتجر: {row['store']}\n"
+                f"📍 العنوان: {row['address']}\n"
+            )
+
+            if url:
+                keyboard = InlineKeyboardMarkup(
+                    [[InlineKeyboardButton("📄 عرض المواصفات", url=url)]]
+                )
+            else:
+                keyboard = None
+
+            await query.edit_message_text(text, reply_markup=keyboard)
+
+    await query.message.reply_text("هل تريد البحث بطريقة أخرى؟ اختر خيارًا:", reply_markup=search_markup)
+    # مسح المتجر المختار بعد انتهاء البحث
+    context.user_data.pop('selected_store', None)
+    return CHOOSING
+
+async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, results):
+    if results.empty:
+        await update.message.reply_text("لم أجد نتائج مطابقة، حاول مرة أخرى.")
+        return CHOOSING
+
+    for _, row in results.iterrows():
+        name_lower = row['name'].lower()
+        url = url_map.get(name_lower)
 
         text = (
-            f"📱 الاسم: {device_name}\n"
+            f"📱 الاسم: {row['name']}\n"
             f"💾 الرام والذاكرة: {row['ram_memory']}\n"
             f"💰 السعر: {row['price']:,} د.ع\n"
             f"🏷️ الماركة: {row['brand']}\n"
@@ -154,86 +221,11 @@ async def build_response_with_buttons(results):
                 [[InlineKeyboardButton("📄 عرض المواصفات", url=url)]]
             )
         else:
-            keyboard = InlineKeyboardMarkup(
-                [[InlineKeyboardButton("📄 عرض المواصفات", callback_data=f"no_specs::{device_name}")]]
-            )
+            keyboard = None
 
-        responses.append((text, keyboard))
-    return responses
-
-async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, results):
-    if results.empty:
-        await update.message.reply_text("لم أجد نتائج مطابقة، حاول مرة أخرى.")
-        return CHOOSING
-
-    responses = await build_response_with_buttons(results)
-    for text, keyboard in responses:
-        if keyboard:
-            await update.message.reply_text(text, reply_markup=keyboard)
-        else:
-            await update.message.reply_text(text)
+        await update.message.reply_text(text, reply_markup=keyboard)
 
     await update.message.reply_text("هل تريد البحث بطريقة أخرى؟ اختر خيارًا:", reply_markup=search_markup)
-    return CHOOSING
-
-async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.message.text.lower()
-    names_list = df['name'].tolist()
-
-    matches = process.extract(query, names_list, limit=10)
-    good_matches = [match for match in matches if match[1] >= 85]
-
-    if good_matches:
-        matched_names = [match[0] for match in good_matches]
-        results = df[df['name'].isin(matched_names)]
-        return await send_results(update, context, results)
-    else:
-        top_matches = [match[0] for match in matches[:5]]
-        keyboard = [[InlineKeyboardButton(name, callback_data=f"name_select::{name}")] for name in top_matches]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await update.message.reply_text(
-            "لم أجد تطابقًا دقيقًا، هل تقصد أحد هذه الهواتف؟ اختر من القائمة:",
-            reply_markup=reply_markup
-        )
-        return CHOOSING
-
-async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-    prefix, selected_name = data.split("::", 1)
-
-    results = df[df['name'] == selected_name]
-    if results.empty:
-        await query.edit_message_text("لم أتمكن من إيجاد معلومات عن هذا الجهاز.")
-    else:
-        responses = await build_response_with_buttons(results)
-        for text, keyboard in responses:
-            await query.edit_message_text(text, reply_markup=keyboard)
-
-    await query.message.reply_text("هل تريد البحث بطريقة أخرى؟ اختر خيارًا:", reply_markup=search_markup)
-    return CHOOSING
-
-async def store_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-    prefix, store_name = data.split("::", 1)
-
-    results = df[df['store'].str.lower() == store_name.lower()]
-    if results.empty:
-        await query.edit_message_text("لم أجد نتائج لهذا المتجر.")
-    else:
-        await query.edit_message_text(f"نتائج البحث لمتجر: {store_name}")
-
-        responses = await build_response_with_buttons(results)
-        for text, keyboard in responses:
-            await query.message.reply_text(text, reply_markup=keyboard)
-
-    await query.message.reply_text("هل تريد البحث بطريقة أخرى؟ اختر خيارًا:", reply_markup=search_markup)
     return CHOOSING
 
 async def search_by_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -250,11 +242,6 @@ async def search_by_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     results = df[(df['price'] >= lower_bound) & (df['price'] <= upper_bound)]
     return await send_results(update, context, results)
 
-async def no_specs_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text("عذراً، لم تتوفر مواصفات لهذا الجهاز.")
-
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("تم إلغاء البحث. لإعادة البدء أرسل /start", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
@@ -267,13 +254,12 @@ if __name__ == '__main__':
         entry_points=[CommandHandler('start', start)],
         states={
             CHOOSING: [
-                MessageHandler(filters.TEXT & (~filters.COMMAND), choosing),
+                CallbackQueryHandler(search_choice_handler, pattern=r"^search_"),
                 CallbackQueryHandler(name_selection_handler, pattern=r"^name_select::"),
                 CallbackQueryHandler(store_selection_handler, pattern=r"^store_select::"),
-                CallbackQueryHandler(no_specs_handler, pattern=r"^no_specs::"),
             ],
             TYPING_NAME: [MessageHandler(filters.TEXT & (~filters.COMMAND), search_by_name)],
-            SELECTING_STORE: [],
+            SELECTING_STORE: [CallbackQueryHandler(store_selection_handler, pattern=r"^store_select::")],
             TYPING_PRICE: [MessageHandler(filters.TEXT & (~filters.COMMAND), search_by_price)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
