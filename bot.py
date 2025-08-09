@@ -53,6 +53,19 @@ def store_user(user):
 # ======= تحميل البيانات =======
 df = pd.read_excel(PRICES_PATH)
 
+# إعادة تسمية الأعمدة لتسهيل الاستخدام في الكود
+df.rename(columns={
+    'الاسم (name)': 'name',
+    'الرام والذاكره': 'ram_memory',
+    'السعر (price)': 'price',
+    'الماركه ( Brand )': 'brand',
+    'المتجر': 'store',
+    'العنوان': 'address'
+}, inplace=True)
+
+# تحويل عمود السعر إلى float مع إزالة الفواصل
+df['price'] = df['price'].astype(str).str.replace(',', '').astype(float)
+
 with open(URLS_PATH, encoding='utf-8') as f:
     phones_urls_data = json.load(f)
 
@@ -108,11 +121,11 @@ async def build_response_with_buttons(results):
 
         text = (
             f"📱 الاسم: {row['name']}\n"
-            f"💾 الرام والذاكرة: {row['الرام والذاكره']}\n"
+            f"💾 الرام والذاكرة: {row['ram_memory']}\n"
             f"💰 السعر: {row['price']:,} د.ع\n"
-            f"🏷️ الماركة: {row['Brand']}\n"
-            f"🏪 المتجر: {row['المتجر']}\n"
-            f"📍 العنوان: {row['العنوان']}\n"
+            f"🏷️ الماركة: {row['brand']}\n"
+            f"🏪 المتجر: {row['store']}\n"
+            f"📍 العنوان: {row['address']}\n"
         )
 
         if url:
@@ -145,7 +158,7 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     names_list = df['name'].tolist()
 
     matches = process.extract(query, names_list, limit=10)
-    good_matches = [match for match in matches if match[1] >= 95]
+    good_matches = [match for match in matches if match[1] >= 85]  # استخدمت 85 لتوسيع البحث قليلاً
 
     if good_matches:
         matched_names = [match[0] for match in good_matches]
@@ -183,7 +196,7 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
 
 async def search_by_store(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.message.text.lower()
-    results = df[df['المتجر'].str.lower().str.contains(query)]
+    results = df[df['store'].str.lower().str.contains(query)]
     return await send_results(update, context, results)
 
 async def search_by_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
