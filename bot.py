@@ -135,6 +135,20 @@ async def search_choice_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_text("💰 أرسل السعر المطلوب (رقم فقط):")
         return TYPING_PRICE
 
+    elif choice == "new_search":
+        await query.edit_message_text(
+            "👋 كيف تريد البحث عن الهواتف؟ اختر خيارًا:",
+            reply_markup=search_markup
+        )
+        return CHOOSING
+
+    elif choice == "go_back":
+        await query.edit_message_text(
+            "👋 كيف تريد البحث عن الهواتف؟ اختر خيارًا:",
+            reply_markup=search_markup
+        )
+        return CHOOSING
+
 async def store_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -150,25 +164,35 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     names_list = filtered_df['name'].tolist()
 
     matches = [(name, fuzz.token_sort_ratio(query_text, name.lower())) for name in names_list]
+
     good_matches = [match for match in matches if match[1] >= 95]
 
     if good_matches:
         matched_names = [match[0] for match in good_matches]
         results = filtered_df[filtered_df['name'].isin(matched_names)]
         return await send_results(update, context, results)
-    else:
-        filtered_suggestions = [match for match in matches if match[1] >= 70]
-        top_matches = sorted(filtered_suggestions, key=lambda x: x[1], reverse=True)[:6]
 
-        if top_matches:
-            reply_markup = build_product_buttons(top_matches, filtered_df)
-            await update.message.reply_text(
-                "لم أجد تطابقًا بنسبة 95٪، هل تقصد أحد هذه الأجهزة؟ اختر من القائمة:",
-                reply_markup=reply_markup
-            )
-        else:
-            await update.message.reply_text("❌ لم أتمكن من العثور على أي جهاز مشابه للاسم المدخل.")
-        return CHOOSING
+    # عرض اقتراحات بنسبة تشابه >= 70%
+    suggestions = [match for match in matches if match[1] >= 70]
+    suggestions = sorted(suggestions, key=lambda x: x[1], reverse=True)[:6]
+
+    if suggestions:
+        keyboard = []
+        for name, score in suggestions:
+            button_text = f"📱 {name} ({score}%)"
+            keyboard.append([InlineKeyboardButton(button_text, callback_data=f"name_select::{name}")])
+        keyboard.append([InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")])
+        keyboard.append([InlineKeyboardButton("🔙 رجوع", callback_data="go_back")])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            "❌ لم أجد تطابقًا دقيقًا، هل تقصد أحد هذه الأجهزة؟ اختر من القائمة:",
+            reply_markup=reply_markup
+        )
+    else:
+        await update.message.reply_text("❌ لم أتمكن من العثور على أي جهاز مشابه للاسم المدخل.")
+
+    return CHOOSING
 
 async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
