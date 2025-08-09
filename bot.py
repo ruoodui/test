@@ -62,6 +62,7 @@ df.rename(columns={
     'العنوان': 'address'
 }, inplace=True)
 
+df['name'] = df['name'].str.strip()  # تنظيف أسماء الهواتف من فراغات
 df['price'] = df['price'].astype(str).str.replace(',', '').astype(float)
 
 with open(URLS_PATH, encoding='utf-8') as f:
@@ -164,16 +165,17 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     names_list = filtered_df['name'].tolist()
 
     matches = [(name, fuzz.token_sort_ratio(query_text, name.lower())) for name in names_list]
+    print("Matches and scores:", matches)  # طباعة النتائج للمراجعة
 
-    good_matches = [match for match in matches if match[1] >= 95]
+    good_matches = [match for match in matches if match[1] >= 85]  # عتبة أقل
 
     if good_matches:
         matched_names = [match[0] for match in good_matches]
         results = filtered_df[filtered_df['name'].isin(matched_names)]
         return await send_results(update, context, results)
 
-    # عرض اقتراحات بنسبة تشابه >= 70%
-    suggestions = [match for match in matches if match[1] >= 70]
+    # عرض اقتراحات بنسبة تشابه >= 60%
+    suggestions = [match for match in matches if match[1] >= 60]
     suggestions = sorted(suggestions, key=lambda x: x[1], reverse=True)[:6]
 
     if suggestions:
@@ -195,7 +197,7 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CHOOSING
 
 async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("name_selection_handler triggered")  # للتتبع
+    print("name_selection_handler triggered")
     query = update.callback_query
     await query.answer()
     _, selected_name = query.data.split("::", 1)
