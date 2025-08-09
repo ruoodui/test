@@ -1,18 +1,14 @@
 import os
-import io
-import csv
 import json
 import pandas as pd
 from thefuzz import process
-import asyncio
 
 from telegram import (
     Update, InlineKeyboardButton, InlineKeyboardMarkup,
-    InputFile
 )
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ConversationHandler, filters, ContextTypes
+    filters, ContextTypes
 )
 
 # ======= إعدادات =======
@@ -25,11 +21,11 @@ TOKEN = os.getenv("TOKEN")
 CHANNEL_USERNAME = "@mitech808"
 ADMIN_IDS = [193646746]
 
-# تحقق من وجود الملفات
+# ======= التحقق من وجود الملفات (رفع استثناء عند الفقدان) =======
 if not os.path.exists(PRICES_PATH):
-    print(f"❌ ملف الأسعار غير موجود: {PRICES_PATH}")
+    raise FileNotFoundError(f"❌ ملف الأسعار غير موجود: {PRICES_PATH}")
 if not os.path.exists(URLS_PATH):
-    print(f"❌ ملف الروابط غير موجود: {URLS_PATH}")
+    raise FileNotFoundError(f"❌ ملف الروابط غير موجود: {URLS_PATH}")
 
 # ======= دوال إدارة المستخدمين =======
 def load_users():
@@ -55,8 +51,6 @@ def store_user(user):
 
 # ======= تحميل بيانات الأسعار =======
 def load_excel_prices(path=PRICES_PATH):
-    if not os.path.exists(path):
-        return {}
     df = pd.read_excel(path)
     df = df.dropna(subset=["الاسم (name)", "السعر (price)"])
     phone_map = {}
@@ -72,8 +66,6 @@ def load_excel_prices(path=PRICES_PATH):
 
 # ======= تحميل روابط المواصفات =======
 def load_phone_urls(filepath=URLS_PATH):
-    if not os.path.exists(filepath):
-        return {}
     with open(filepath, encoding="utf-8") as f:
         data = json.load(f)
     url_map = {}
@@ -85,6 +77,7 @@ def load_phone_urls(filepath=URLS_PATH):
                 url_map[name.strip()] = url
     return url_map
 
+# تحميل البيانات مبدئيًا
 price_data = load_excel_prices()
 phone_urls = load_phone_urls()
 
@@ -93,7 +86,7 @@ def fuzzy_get_url(name):
     if name in phone_urls:
         return phone_urls[name]
     matches = process.extract(name, phone_urls.keys(), limit=1)
-    if matches and matches[0][1] >= 80:
+    if matches and matches[0][1] >= 80:  # تخفيض من 95 إلى 80
         return phone_urls[matches[0][0]]
     return "https://t.me/mitech808"
 
@@ -132,14 +125,11 @@ async def check_user_subscription(user_id, context):
 async def send_subscription_required(update: Update):
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📢 انضم إلى قناتنا", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
-        [InlineKeyboardButton("📸 تابعنا على إنستغرام", url="https://www.instagram.com/mitech808")],
         [InlineKeyboardButton("🔄 تحقق من الاشتراك", callback_data="check_subscription")]
     ])
     await update.message.reply_text(
         "🔒 يرجى الانضمام إلى قناتنا على تليغرام من أجل استخدام البوت 😍✅\n\n"
-        f"📢 قناة التليغرام: {CHANNEL_USERNAME}\n"
-        "📸 أيضًا يجب متابعة حساب الإنستغرام:\n"
-        "https://www.instagram.com/mitech808\n\n"
+        f"📢 قناة التليغرام: {CHANNEL_USERNAME}\n\n"
         "✅ بعد الاشتراك، اضغط على /start للبدء الآن.",
         reply_markup=keyboard
     )
@@ -151,6 +141,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await send_subscription_required(update)
     store_user(update.effective_user)
     await update.message.reply_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
+
+# ======= معالجة ضغط أزرار القائمة =======
+async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+
+    if data == "search_by_name":
+        context.user_data['search_mode'] = 'name'
+        await query.message.reply_text("✏️ اكتب اسم الجهاز الذي تريد البحث عنه:")
+    elif data == "search_by_store":
+        context.user_data['search_mode'] = 'store'
+        await query.message.reply_text("🏬 اكتب اسم المتجر للبحث عن الأجهزة فيه:")
+    elif data == "search_by_price":
+        context.user_data['search_mode'] = 'price'
+        await query.message.reply_text("💰 اكتب السعر للبحث عن الأجهزة ضمن نطاق ±10%:")
+    elif data == BACK_TO_MENU:
+        context.user_data.pop('search_mode', None)
+        await query.message.reply_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
+    elif data == "check_subscription":
+        user_id = query.from_user.id
+        if await check_user_subscription(user_id, context):
+            await query.message.reply_text("✅ أنت مشترك في القناة! يمكنك الآن استخدام البوت.")
+            await query.message.reply_text(WELCOME_MSG, reply_markup=main_menu_keyboard())
+        else:
+            await query.message.reply_text("⚠️ لم يتم العثور على اشتراك في القناة. يرجى الاشتراك أولاً.")
+    else:
+        await query.message.reply_text("⚠️ خيار غير معروف.")
 
 # ======= البحث =======
 async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -164,12 +183,12 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     if mode == "name":
         matches = process.extract(text, price_data.keys(), limit=10)
-        results = [name for name, score in matches if score >= 95]
+        results = [name for name, score in matches if score >= 80]  # تخفيض نسبة التطابق
 
     elif mode == "store":
         all_stores = {entry["store"] for devices in price_data.values() for entry in devices}
         matches = process.extract(text, all_stores, limit=10)
-        matched_stores = [store for store, score in matches if score >= 95]
+        matched_stores = [store for store, score in matches if score >= 80]
         for store in matched_stores:
             for name, devices in price_data.items():
                 if any(store == d["store"] for d in devices):
@@ -201,10 +220,19 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
     buttons.append([InlineKeyboardButton("🔙 رجوع إلى القائمة الرئيسية", callback_data=BACK_TO_MENU)])
     await update.message.reply_text(f"🔍 نتائج البحث عن '{text}':", reply_markup=InlineKeyboardMarkup(buttons))
 
+# ======= أمر إعادة تحميل البيانات =======
+async def reload_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global price_data, phone_urls
+    price_data = load_excel_prices()
+    phone_urls = load_phone_urls()
+    await update.message.reply_text("✅ تم إعادة تحميل بيانات الأسعار والروابط.")
+
 # ======= التشغيل =======
 def main():
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("reload", reload_data))
+    application.add_handler(CallbackQueryHandler(menu_callback_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_search_text))
     print("🤖 البوت يعمل الآن...")
     application.run_polling()
