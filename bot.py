@@ -18,11 +18,11 @@ PRICES_PATH = os.path.join(BASE_DIR, "prices.xlsx")
 URLS_PATH = os.path.join(BASE_DIR, "phones_urls.json")
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 
-TOKEN = os.getenv("TOKEN")  # يجب ضبط متغير البيئة TOKEN قبل التشغيل
+TOKEN = os.getenv("TOKEN")  # تأكد من ضبط متغير البيئة TOKEN قبل التشغيل
 CHANNEL_USERNAME = "@mitech808"
 ADMIN_IDS = [193646746]
 
-# ======= التحقق من وجود الملفات (رفع استثناء عند الفقدان) =======
+# ======= التحقق من وجود الملفات =======
 if not os.path.exists(PRICES_PATH):
     raise FileNotFoundError(f"❌ ملف الأسعار غير موجود: {PRICES_PATH}")
 if not os.path.exists(URLS_PATH):
