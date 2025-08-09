@@ -119,7 +119,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "search_name":
         await query.edit_message_text("أرسل اسم الهاتف أو جزء منه:", reply_markup=back_to_menu_keyboard())
-        # مسح متجر مختار إن وجد
         context.user_data.pop('selected_store', None)
         return TYPING_NAME
 
@@ -139,7 +138,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "search_price":
         await query.edit_message_text("أرسل السعر المطلوب (رقم فقط):", reply_markup=back_to_menu_keyboard())
-        # مسح متجر مختار إن وجد
         context.user_data.pop('selected_store', None)
         return TYPING_PRICE
 
@@ -285,7 +283,7 @@ if __name__ == '__main__':
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            CHOOSING: [CallbackQueryHandler(button_handler)],
+            CHOOSING: [CallbackQueryHandler(button_handler, per_message=True)],
             TYPING_NAME: [MessageHandler(filters.TEXT & (~filters.COMMAND), search_by_name)],
             TYPING_NAME_IN_STORE: [MessageHandler(filters.TEXT & (~filters.COMMAND), search_by_name_in_store)],
             TYPING_PRICE: [MessageHandler(filters.TEXT & (~filters.COMMAND), search_by_price)],
