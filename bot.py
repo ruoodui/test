@@ -283,7 +283,7 @@ if __name__ == '__main__':
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            CHOOSING: [CallbackQueryHandler(button_handler, per_message=True)],
+            CHOOSING: [CallbackQueryHandler(button_handler)],
             TYPING_NAME: [MessageHandler(filters.TEXT & (~filters.COMMAND), search_by_name)],
             TYPING_NAME_IN_STORE: [MessageHandler(filters.TEXT & (~filters.COMMAND), search_by_name_in_store)],
             TYPING_PRICE: [MessageHandler(filters.TEXT & (~filters.COMMAND), search_by_price)],
