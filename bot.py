@@ -1,11 +1,13 @@
 import os
+import io
+import csv
 import json
 import pandas as pd
 from thefuzz import process, fuzz
 
 from telegram import (
     Update, InlineKeyboardButton, InlineKeyboardMarkup,
-    ReplyKeyboardRemove
+    ReplyKeyboardRemove, InputFile
 )
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
@@ -22,11 +24,13 @@ TOKEN = os.getenv("TOKEN")  # تأكد من ضبط متغير البيئة TOKEN
 CHANNEL_USERNAME = "@mitech808"
 ADMIN_IDS = [193646746]
 
-# ======= التحقق من وجود الملفات =======
-if not os.path.exists(PRICES_PATH):
-    raise FileNotFoundError(f"❌ ملف الأسعار غير موجود: {PRICES_PATH}")
-if not os.path.exists(URLS_PATH):
-    raise FileNotFoundError(f"❌ ملف الروابط غير موجود: {URLS_PATH}")
+# ======= الرسائل الثابتة =======
+WELCOME_MSG = (
+    "👋 مرحبًا بك في بوت أسعار الموبايلات!\n\n"
+    "لإضافة متجرك للبوت، يرجى مراسلتنا عبر رقم الواتساب التالي:\n"
+    "07828816508\n\n"
+    "اختر طريقة البحث المناسبة لك من الأزرار أدناه:"
+)
 
 # ======= دوال إدارة المستخدمين =======
 def load_users():
@@ -50,6 +54,36 @@ def store_user(user):
         }
         save_users(users)
 
+# ======= التحقق من الاشتراك =======
+async def check_user_subscription(user_id, context):
+    try:
+        member = await context.bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
+        return member.status in ["member", "creator", "administrator"]
+    except Exception as e:
+        print("⚠️ Subscription check failed:", e)
+        return False
+
+async def send_subscription_required(update: Update):
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📢 انضم إلى قناتنا", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
+        [InlineKeyboardButton("📸 تابعنا على إنستغرام", url="https://www.instagram.com/mitech808")],
+        [InlineKeyboardButton("🔄 تحقق من الاشتراك", callback_data="check_subscription")]
+    ])
+    await update.message.reply_text(
+        "🔒 يرجى الانضمام إلى قناتنا على تليغرام من أجل استخدام البوت 😍✅\n\n"
+        f"📢 قناة التليغرام: {CHANNEL_USERNAME}\n"
+        "📸 أيضًا يجب متابعة حساب الإنستغرام:\n"
+        "https://www.instagram.com/mitech808\n\n"
+        "✅ بعد الاشتراك، اضغط على /start للبدء الآن.",
+        reply_markup=keyboard
+    )
+
+# ======= التحقق من وجود الملفات =======
+if not os.path.exists(PRICES_PATH):
+    raise FileNotFoundError(f"❌ ملف الأسعار غير موجود: {PRICES_PATH}")
+if not os.path.exists(URLS_PATH):
+    raise FileNotFoundError(f"❌ ملف الروابط غير موجود: {URLS_PATH}")
+
 # ======= تحميل البيانات =======
 df = pd.read_excel(PRICES_PATH)
 
@@ -62,16 +96,19 @@ df.rename(columns={
     'العنوان': 'address'
 }, inplace=True)
 
-df['name'] = df['name'].str.strip()  # تنظيف أسماء الهواتف من فراغات
+df['name'] = df['name'].astype(str).str.strip()
 df['price'] = df['price'].astype(str).str.replace(',', '').astype(float)
 
 with open(URLS_PATH, encoding='utf-8') as f:
     phones_urls_data = json.load(f)
 
+def clean_name(name):
+    return ''.join(ch for ch in name.lower().strip() if ch.isalnum() or ch.isspace())
+
 url_map = {}
 for brand_group in phones_urls_data.values():
     for device in brand_group:
-        url_map[device['name'].lower()] = device['url']
+        url_map[clean_name(device['name'])] = device['url']
 
 # ======= حالات الحوار =======
 CHOOSING, TYPING_NAME, SELECTING_STORE, TYPING_PRICE = range(4)
@@ -89,32 +126,35 @@ search_markup = InlineKeyboardMarkup(search_keyboard)
 def get_unique_stores():
     return sorted(df['store'].dropna().unique().tolist())
 
-def build_product_buttons(matches, df):
-    keyboard = []
-    for i in range(0, len(matches), 2):
-        row = []
-        for j in range(2):
-            if i + j < len(matches):
-                name = matches[i + j][0]
-                price = df[df['name'] == name]['price'].values[0]
-                button_text = f"📱 {name}\n💰 {price} د.ع"
-                row.append(InlineKeyboardButton(button_text, callback_data=f"name_select::{name}"))
-        keyboard.append(row)
-    keyboard.append([
-        InlineKeyboardButton("📋 عرض الكل", callback_data="show_all"),
-        InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")
-    ])
-    keyboard.append([InlineKeyboardButton("🔙 رجوع", callback_data="go_back")])
-    return InlineKeyboardMarkup(keyboard)
+def get_device_url(name):
+    cleaned = clean_name(name)
+    best_match = process.extractOne(cleaned, url_map.keys(), scorer=fuzz.token_sort_ratio)
+    if best_match and best_match[1] >= 80:
+        return url_map[best_match[0]]
+    return None
 
 # ======= دوال البوت =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if not await check_user_subscription(user_id, context):
+        await send_subscription_required(update)
+        return ConversationHandler.END
+
     store_user(update.effective_user)
     await update.message.reply_text(
-        "👋 أهلاً بك! كيف تريد البحث عن الهواتف؟ اختر خيارًا:",
+        WELCOME_MSG,
         reply_markup=search_markup
     )
     return CHOOSING
+
+async def subscription_check_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    if await check_user_subscription(user_id, context):
+        await query.edit_message_text("✅ شكراً لانضمامك! يمكنك الآن استخدام البوت عبر /start")
+    else:
+        await query.edit_message_text("❌ لم يتم العثور على اشتراكك. يرجى الانضمام أولاً.")
 
 async def search_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -136,14 +176,7 @@ async def search_choice_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_text("💰 أرسل السعر المطلوب (رقم فقط):")
         return TYPING_PRICE
 
-    elif choice == "new_search":
-        await query.edit_message_text(
-            "👋 كيف تريد البحث عن الهواتف؟ اختر خيارًا:",
-            reply_markup=search_markup
-        )
-        return CHOOSING
-
-    elif choice == "go_back":
+    elif choice in ("new_search", "go_back"):
         await query.edit_message_text(
             "👋 كيف تريد البحث عن الهواتف؟ اختر خيارًا:",
             reply_markup=search_markup
@@ -165,39 +198,38 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     names_list = filtered_df['name'].tolist()
 
     matches = [(name, fuzz.token_sort_ratio(query_text, name.lower())) for name in names_list]
-    print("Matches and scores:", matches)  # طباعة النتائج للمراجعة
-
-    good_matches = [match for match in matches if match[1] >= 85]  # عتبة أقل
+    good_matches = [match for match in matches if match[1] >= 75]
 
     if good_matches:
         matched_names = [match[0] for match in good_matches]
         results = filtered_df[filtered_df['name'].isin(matched_names)]
         return await send_results(update, context, results)
 
-    # عرض اقتراحات بنسبة تشابه >= 60%
-    suggestions = [match for match in matches if match[1] >= 60]
-    suggestions = sorted(suggestions, key=lambda x: x[1], reverse=True)[:6]
+    suggestions = sorted(
+        [match for match in matches if match[1] >= 60],
+        key=lambda x: x[1], reverse=True
+    )[:6]
 
     if suggestions:
-        keyboard = []
-        for name, score in suggestions:
-            button_text = f"📱 {name} ({score}%)"
-            keyboard.append([InlineKeyboardButton(button_text, callback_data=f"name_select::{name}")])
+        keyboard = [
+            [InlineKeyboardButton(f"📱 {name} ({score}%)", callback_data=f"name_select::{name}")]
+            for name, score in suggestions
+        ]
         keyboard.append([InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")])
         keyboard.append([InlineKeyboardButton("🔙 رجوع", callback_data="go_back")])
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            "❌ لم أجد تطابقًا دقيقًا، هل تقصد أحد هذه الأجهزة؟ اختر من القائمة:",
+            "❌ لم أجد تطابقًا دقيقًا، هل تقصد أحد هذه الأجهزة؟",
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text("❌ لم أتمكن من العثور على أي جهاز مشابه للاسم المدخل.")
 
+    await update.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=search_markup)
     return CHOOSING
 
 async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("name_selection_handler triggered")
     query = update.callback_query
     await query.answer()
     _, selected_name = query.data.split("::", 1)
@@ -209,10 +241,7 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
         await query.edit_message_text("❌ لم أتمكن من إيجاد معلومات عن هذا الجهاز.")
     else:
         for _, row in results.iterrows():
-            name_lower = row['name'].lower()
-            best_match = process.extractOne(name_lower, url_map.keys(), scorer=fuzz.token_sort_ratio)
-            url = url_map[best_match[0]] if best_match and best_match[1] >= 90 else None
-
+            url = get_device_url(row['name'])
             text = (
                 f"📱 الاسم: {row['name']}\n"
                 f"💾 الرام والذاكرة: {row['ram_memory']}\n"
@@ -225,7 +254,7 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
             await query.edit_message_text(text, reply_markup=keyboard)
 
     context.user_data.pop('selected_store', None)
-    await query.message.reply_text("هل تريد البحث بطريقة أخرى؟ اختر خيارًا:", reply_markup=search_markup)
+    await query.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=search_markup)
     return CHOOSING
 
 async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, results):
@@ -234,10 +263,7 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
         return CHOOSING
 
     for _, row in results.iterrows():
-        name_lower = row['name'].lower()
-        best_match = process.extractOne(name_lower, url_map.keys(), scorer=fuzz.token_sort_ratio)
-        url = url_map[best_match[0]] if best_match and best_match[1] >= 90 else None
-
+        url = get_device_url(row['name'])
         text = (
             f"📱 الاسم: {row['name']}\n"
             f"💾 الرام والذاكرة: {row['ram_memory']}\n"
@@ -249,7 +275,7 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
         keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("📄 عرض المواصفات", url=url)]]) if url else None
         await update.message.reply_text(text, reply_markup=keyboard)
 
-    await update.message.reply_text("هل تريد البحث بطريقة أخرى؟ اختر خيارًا:", reply_markup=search_markup)
+    await update.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=search_markup)
     return CHOOSING
 
 async def search_by_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -271,6 +297,51 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء العملية. يمكنك البدء من جديد باستخدام /start", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
+# ======= دوال إحصائيات المشرف =======
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ هذا الأمر مخصص للمشرف فقط.")
+        return
+
+    users = load_users()
+    user_count = len(users)
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("⬇️ تصدير المستخدمين CSV", callback_data="export_users_csv")]
+    ])
+
+    await update.message.reply_text(
+        f"👥 عدد مستخدمي البوت: {user_count}",
+        reply_markup=keyboard
+    )
+
+async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+    if user_id not in ADMIN_IDS:
+        await query.answer("❌ هذا الأمر مخصص للمشرف فقط.", show_alert=True)
+        return
+
+    users = load_users()
+    if not users:
+        await query.message.reply_text("❌ لا يوجد مستخدمون مسجلون حالياً.")
+        return
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "name", "username"])
+    for user in users.values():
+        writer.writerow([user.get("id", ""), user.get("name", ""), user.get("username", "")])
+
+    output.seek(0)
+    bio = io.BytesIO(output.getvalue().encode("utf-8"))
+    bio.name = "users.csv"
+
+    await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
+
 # ======= تشغيل التطبيق =======
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
@@ -289,6 +360,11 @@ def main():
 
     app.add_handler(conv_handler)
     app.add_handler(CallbackQueryHandler(name_selection_handler, pattern="^name_select::"))
+    app.add_handler(CallbackQueryHandler(subscription_check_callback, pattern="^check_subscription$"))
+
+    # إضافة أمر الإحصائيات للمشرف
+    app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
 
     print("✅ البوت يعمل الآن...")
     app.run_polling()
