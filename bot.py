@@ -190,7 +190,7 @@ async def store_selection_handler(update: Update, context: ContextTypes.DEFAULT_
     await query.edit_message_text(f"🔍 البحث داخل المتجر: {selected_store}\n\nأرسل اسم الهاتف أو جزء منه:")
     return TYPING_NAME
 
-# ======= تعديل دالة البحث بالاسم مع قائمة اقتراحات نصية تبدأ من 60% =======
+# ======= تعديل دالة البحث بالاسم مع قائمة اقتراحات نصية تبدأ من 60% وعدد الاقتراحات 10 =======
 async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query_text = update.message.text.strip()
     selected_store = context.user_data.get('selected_store')
@@ -204,9 +204,9 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
         results = filtered_df[filtered_df['name'].isin(matched_names)]
         return await send_results(update, context, results)
 
-    # اقتراحات بنسب تطابق بين 60% و 89%
+    # اقتراحات بنسب تطابق بين 60% و 89% (عدد 10 اقتراحات)
     suggestions = [name for name, score in [(n, fuzz.token_sort_ratio(query_text.lower(), n.lower())) for n in names_list] if 60 <= score < 90]
-    suggestions = sorted(suggestions, key=lambda n: fuzz.token_sort_ratio(query_text.lower(), n.lower()), reverse=True)[:6]
+    suggestions = sorted(suggestions, key=lambda n: fuzz.token_sort_ratio(query_text.lower(), n.lower()), reverse=True)[:10]
 
     if suggestions:
         context.user_data['suggestions'] = suggestions  # حفظ الاقتراحات في user_data
@@ -254,7 +254,6 @@ async def suggestion_choice_handler(update: Update, context: ContextTypes.DEFAUL
                     await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
             context.user_data.pop('suggestions', None)
 
-            # بعد عرض النتيجة، نرسل زر "بحث جديد"
             back_keyboard = InlineKeyboardMarkup([
                 [InlineKeyboardButton("🔄 بحث جديد", callback_data="new_search")]
             ])
@@ -297,7 +296,6 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
 
     context.user_data.pop('selected_store', None)
 
-    # بعد عرض النتيجة، نرسل زر "بحث جديد"
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("🔄 بحث جديد", callback_data="new_search")]
     ])
@@ -403,7 +401,7 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            CHOOSING: [CallbackQueryHandler(search_choice_handler)],
+            CHOOSING: [CallbackQueryHandler(search_choice_handler), CallbackQueryHandler(subscription_check_callback, pattern="^check_subscription$"), CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$")],
             TYPING_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_by_name)],
             SELECTING_SUGGESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, suggestion_choice_handler)],
             SELECTING_STORE: [CallbackQueryHandler(store_selection_handler, pattern="^store_select::")],
@@ -414,10 +412,7 @@ def main():
     )
 
     app.add_handler(conv_handler)
-    app.add_handler(CallbackQueryHandler(name_selection_handler, pattern="^name_select::"))
-    app.add_handler(CallbackQueryHandler(subscription_check_callback, pattern="^check_subscription$"))
     app.add_handler(CommandHandler("stats", stats_command))
-    app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
 
     print("✅ البوت يعمل الآن...")
     app.run_polling()
