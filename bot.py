@@ -110,6 +110,7 @@ for brand_group in phones_urls_data.values():
     for device in brand_group:
         url_map[clean_name(device['name'])] = device['url']
 
+# ======= تحسين البحث عن الروابط =======
 def get_device_url(name):
     cleaned = clean_name(name)
     best_match = process.extractOne(cleaned, url_map.keys(), scorer=fuzz.partial_ratio)
@@ -122,7 +123,7 @@ def get_device_url(name):
     return None
 
 # ======= حالات الحوار =======
-CHOOSING, TYPING_NAME, SELECTING_STORE, TYPING_PRICE = range(4)
+CHOOSING, TYPING_NAME, SELECTING_STORE, TYPING_PRICE, SELECTING_SUGGESTION = range(5)
 
 search_keyboard = [
     [
@@ -136,18 +137,6 @@ search_markup = InlineKeyboardMarkup(search_keyboard)
 # ======= دوال مساعدة =======
 def get_unique_stores():
     return sorted(df['store'].dropna().unique().tolist())
-
-# ======= دالة بحث بالاسم مع اقتراحات =======
-def search_name_with_suggestions(query_text, names_list):
-    query_clean = query_text.lower()
-    matches = [(name, fuzz.token_sort_ratio(query_clean, name.lower())) for name in names_list]
-    matched_names = [name for name, score in matches if score >= 90]
-    if matched_names:
-        return matched_names, []
-    # إذا لم توجد تطابقات >=90، نعرض المقترحات >=70
-    suggestions = [name for name, score in matches if 70 <= score < 90]
-    suggestions_sorted = sorted(suggestions, key=lambda n: process.extractOne(n, [query_clean], scorer=fuzz.token_sort_ratio)[1], reverse=True)[:6]
-    return [], suggestions_sorted
 
 # ======= دوال البوت =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -201,36 +190,77 @@ async def store_selection_handler(update: Update, context: ContextTypes.DEFAULT_
     await query.edit_message_text(f"🔍 البحث داخل المتجر: {selected_store}\n\nأرسل اسم الهاتف أو جزء منه:")
     return TYPING_NAME
 
+# ======= تعديل دالة البحث بالاسم مع قائمة اقتراحات نصية =======
 async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query_text = update.message.text.strip()
     selected_store = context.user_data.get('selected_store')
     filtered_df = df[df['store'].str.lower() == selected_store.lower()] if selected_store else df
     names_list = filtered_df['name'].tolist()
 
-    matched_names, suggestions = search_name_with_suggestions(query_text, names_list)
+    # البحث المباشر بنسب تطابق >= 90%
+    matched_names = [name for name, score in [(n, fuzz.token_sort_ratio(query_text.lower(), n.lower())) for n in names_list] if score >= 90]
 
     if matched_names:
         results = filtered_df[filtered_df['name'].isin(matched_names)]
         return await send_results(update, context, results)
 
-    elif suggestions:
-        keyboard = [
-            [InlineKeyboardButton(f"📱 {name}", callback_data=f"name_select::{name}")]
-            for name in suggestions
-        ]
-        keyboard.append([InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")])
-        reply_markup = InlineKeyboardMarkup(keyboard)
+    # اقتراحات بنسب تطابق بين 75% و 89%
+    suggestions = [name for name, score in [(n, fuzz.token_sort_ratio(query_text.lower(), n.lower())) for n in names_list] if 75 <= score < 90]
+    suggestions = sorted(suggestions, key=lambda n: fuzz.token_sort_ratio(query_text.lower(), n.lower()), reverse=True)[:6]
 
-        await update.message.reply_text(
-            "❌ لم أجد تطابقًا دقيقًا، هل تقصد أحد هذه الأجهزة؟",
-            reply_markup=reply_markup
-        )
-        return CHOOSING
+    if suggestions:
+        context.user_data['suggestions'] = suggestions  # حفظ الاقتراحات في user_data
+        text = "❌ لم أجد تطابقًا دقيقًا، هل تقصد أحد هذه الأجهزة؟\n"
+        for i, name in enumerate(suggestions, start=1):
+            text += f"{i}. {name}\n"
+        text += "\nأرسل رقم الجهاز من القائمة أعلاه لاختيار الجهاز المطلوب، أو أرسل اسم آخر للبحث."
+        await update.message.reply_text(text)
+        return SELECTING_SUGGESTION
 
     else:
         await update.message.reply_text("❌ لم أتمكن من العثور على أي جهاز مشابه للاسم المدخل.")
         await update.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=search_markup)
         return CHOOSING
+
+# ======= استقبال اختيار رقم الاقتراح =======
+async def suggestion_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_input = update.message.text.strip()
+    suggestions = context.user_data.get('suggestions', [])
+
+    if user_input.isdigit():
+        idx = int(user_input) - 1
+        if 0 <= idx < len(suggestions):
+            selected_name = suggestions[idx]
+            selected_store = context.user_data.get('selected_store')
+            filtered_df = df[df['store'].str.lower() == selected_store.lower()] if selected_store else df
+            results = filtered_df[filtered_df['name'] == selected_name]
+
+            if results.empty:
+                await update.message.reply_text("❌ لم أتمكن من إيجاد معلومات عن هذا الجهاز.")
+            else:
+                for _, row in results.iterrows():
+                    url = get_device_url(row['name'])
+                    buttons = []
+                    if url:
+                        buttons.append([InlineKeyboardButton("📄 عرض المواصفات", url=url)])
+                    text = (
+                        f"📱 الاسم: {row['name']}\n"
+                        f"💾 الرام والذاكرة: {row['ram_memory']}\n"
+                        f"💰 السعر: {row['price']:,} د.ع\n"
+                        f"🏷️ الماركة: {row['brand']}\n"
+                        f"🏪 المتجر: {row['store']}\n"
+                        f"📍 العنوان: {row['address']}\n"
+                    )
+                    await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+            context.user_data.pop('suggestions', None)
+            return CHOOSING
+        else:
+            await update.message.reply_text("❌ الرقم غير صالح. الرجاء اختيار رقم من القائمة.")
+            return SELECTING_SUGGESTION
+    else:
+        # إعادة البحث بالنص الجديد
+        context.user_data.pop('suggestions', None)
+        return await search_by_name(update, context)
 
 async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -248,7 +278,6 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
             buttons = []
             if url:
                 buttons.append([InlineKeyboardButton("📄 عرض المواصفات", url=url)])
-            # حذف زر بحث جديد هنا
             text = (
                 f"📱 الاسم: {row['name']}\n"
                 f"💾 الرام والذاكرة: {row['ram_memory']}\n"
@@ -272,7 +301,6 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
         buttons = []
         if url:
             buttons.append([InlineKeyboardButton("📄 عرض المواصفات", url=url)])
-        # حذف زر بحث جديد هنا
         text = (
             f"📱 الاسم: {row['name']}\n"
             f"💾 الرام والذاكرة: {row['ram_memory']}\n"
@@ -285,7 +313,7 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
 
     await update.message.reply_text(
         "اختر طريقة أخرى للبحث:",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")]])
+        reply_markup=search_markup
     )
     return CHOOSING
 
@@ -359,6 +387,7 @@ def main():
         states={
             CHOOSING: [CallbackQueryHandler(search_choice_handler)],
             TYPING_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_by_name)],
+            SELECTING_SUGGESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, suggestion_choice_handler)],
             SELECTING_STORE: [CallbackQueryHandler(store_selection_handler, pattern="^store_select::")],
             TYPING_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_by_price)],
         },
