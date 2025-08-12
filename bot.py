@@ -392,7 +392,8 @@ async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAUL
     bio = io.BytesIO(output.getvalue().encode("utf-8"))
     bio.name = "users.csv"
 
-    await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
+    # إرسال الملف للمستخدم مباشرة
+    await context.bot.send_document(chat_id=user_id, document=InputFile(bio, filename="users.csv"))
 
 # ======= تشغيل التطبيق =======
 def main():
@@ -401,7 +402,12 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            CHOOSING: [CallbackQueryHandler(search_choice_handler), CallbackQueryHandler(subscription_check_callback, pattern="^check_subscription$"), CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$")],
+            CHOOSING: [
+                CallbackQueryHandler(search_choice_handler),
+                CallbackQueryHandler(subscription_check_callback, pattern="^check_subscription$"),
+                CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"),
+                CallbackQueryHandler(search_choice_handler, pattern="^new_search$"),
+            ],
             TYPING_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_by_name)],
             SELECTING_SUGGESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, suggestion_choice_handler)],
             SELECTING_STORE: [CallbackQueryHandler(store_selection_handler, pattern="^store_select::")],
