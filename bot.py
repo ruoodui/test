@@ -248,7 +248,7 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
             buttons = []
             if url:
                 buttons.append([InlineKeyboardButton("📄 عرض المواصفات", url=url)])
-            buttons.append([InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")])
+            # حذف زر بحث جديد هنا
             text = (
                 f"📱 الاسم: {row['name']}\n"
                 f"💾 الرام والذاكرة: {row['ram_memory']}\n"
@@ -272,7 +272,7 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
         buttons = []
         if url:
             buttons.append([InlineKeyboardButton("📄 عرض المواصفات", url=url)])
-        buttons.append([InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")])
+        # حذف زر بحث جديد هنا
         text = (
             f"📱 الاسم: {row['name']}\n"
             f"💾 الرام والذاكرة: {row['ram_memory']}\n"
