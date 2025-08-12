@@ -253,6 +253,13 @@ async def suggestion_choice_handler(update: Update, context: ContextTypes.DEFAUL
                     )
                     await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
             context.user_data.pop('suggestions', None)
+
+            # بعد عرض النتيجة، نرسل زر "بحث جديد"
+            back_keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔄 بحث جديد", callback_data="new_search")]
+            ])
+            await update.message.reply_text("يمكنك الآن البدء ببحث جديد:", reply_markup=back_keyboard)
+
             return CHOOSING
         else:
             await update.message.reply_text("❌ الرقم غير صالح. الرجاء اختيار رقم من القائمة.")
@@ -289,6 +296,13 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
             await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
     context.user_data.pop('selected_store', None)
+
+    # بعد عرض النتيجة، نرسل زر "بحث جديد"
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔄 بحث جديد", callback_data="new_search")]
+    ])
+    await query.message.reply_text("يمكنك الآن البدء ببحث جديد:", reply_markup=keyboard)
+
     return CHOOSING
 
 async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, results):
@@ -311,9 +325,13 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
         )
         await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
+    back_keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔄 بحث جديد", callback_data="new_search")]
+    ])
+
     await update.message.reply_text(
-        "اختر طريقة أخرى للبحث:",
-        reply_markup=search_markup
+        "يمكنك الآن البدء ببحث جديد:",
+        reply_markup=back_keyboard
     )
     return CHOOSING
 
