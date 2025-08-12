@@ -122,6 +122,27 @@ def get_device_url(name):
         return url_map[best_match[0]]
     return None
 
+# ======= دالة البحث المعدلة (اسم الجهاز فقط) =======
+def search_name_with_suggestions(query_text, names_list):
+    cleaned_query = query_text.lower().strip()
+    # بحث أفضل تطابق
+    best_match = process.extractOne(cleaned_query, names_list, scorer=fuzz.WRatio)
+
+    if best_match and best_match[1] >= 90:
+        # تطابق عالي جداً: إرجاع فقط هذا الاسم
+        return [best_match[0]], None
+
+    # لو ما في تطابق ≥ 90%، نبحث عن اقتراحات ≥ 70%
+    suggestions = [match for match in process.extract(cleaned_query, names_list, scorer=fuzz.WRatio) if match[1] >= 70]
+
+    if suggestions:
+        # نرجع قائمة الأسماء فقط
+        suggested_names = [match[0] for match in sorted(suggestions, key=lambda x: x[1], reverse=True)[:6]]
+        return None, suggested_names
+
+    # لا نتائج قريبة
+    return None, None
+
 # ======= حالات الحوار =======
 CHOOSING, TYPING_NAME, SELECTING_STORE, TYPING_PRICE = range(4)
 
@@ -191,28 +212,21 @@ async def store_selection_handler(update: Update, context: ContextTypes.DEFAULT_
     return TYPING_NAME
 
 async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query_text = update.message.text.lower().strip()
+    query_text = update.message.text.strip()
     selected_store = context.user_data.get('selected_store')
     filtered_df = df[df['store'].str.lower() == selected_store.lower()] if selected_store else df
     names_list = filtered_df['name'].tolist()
 
-    matches = [(name, fuzz.WRatio(query_text, name.lower())) for name in names_list]
-    good_matches = [match for match in matches if match[1] >= 75]
+    matched_names, suggestions = search_name_with_suggestions(query_text, names_list)
 
-    if good_matches:
-        matched_names = [match[0] for match in good_matches]
+    if matched_names:
         results = filtered_df[filtered_df['name'].isin(matched_names)]
         return await send_results(update, context, results)
 
-    suggestions = sorted(
-        [match for match in matches if match[1] >= 60],
-        key=lambda x: x[1], reverse=True
-    )[:6]
-
-    if suggestions:
+    elif suggestions:
         keyboard = [
-            [InlineKeyboardButton(f"📱 {name} ({score}%)", callback_data=f"name_select::{name}")]
-            for name, score in suggestions
+            [InlineKeyboardButton(f"📱 {name}", callback_data=f"name_select::{name}")]
+            for name in suggestions
         ]
         keyboard.append([InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")])
         keyboard.append([InlineKeyboardButton("🔙 رجوع", callback_data="go_back")])
@@ -222,11 +236,12 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "❌ لم أجد تطابقًا دقيقًا، هل تقصد أحد هذه الأجهزة؟",
             reply_markup=reply_markup
         )
+        return CHOOSING
+
     else:
         await update.message.reply_text("❌ لم أتمكن من العثور على أي جهاز مشابه للاسم المدخل.")
-
-    await update.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=search_markup)
-    return CHOOSING
+        await update.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=search_markup)
+        return CHOOSING
 
 async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
