@@ -190,7 +190,7 @@ async def store_selection_handler(update: Update, context: ContextTypes.DEFAULT_
     await query.edit_message_text(f"🔍 البحث داخل المتجر: {selected_store}\n\nأرسل اسم الهاتف أو جزء منه:")
     return TYPING_NAME
 
-# ======= تعديل دالة البحث بالاسم مع قائمة اقتراحات نصية =======
+# ======= تعديل دالة البحث بالاسم مع قائمة اقتراحات نصية تبدأ من 60% =======
 async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query_text = update.message.text.strip()
     selected_store = context.user_data.get('selected_store')
@@ -204,8 +204,8 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
         results = filtered_df[filtered_df['name'].isin(matched_names)]
         return await send_results(update, context, results)
 
-    # اقتراحات بنسب تطابق بين 75% و 89%
-    suggestions = [name for name, score in [(n, fuzz.token_sort_ratio(query_text.lower(), n.lower())) for n in names_list] if 75 <= score < 90]
+    # اقتراحات بنسب تطابق بين 60% و 89%
+    suggestions = [name for name, score in [(n, fuzz.token_sort_ratio(query_text.lower(), n.lower())) for n in names_list] if 60 <= score < 90]
     suggestions = sorted(suggestions, key=lambda n: fuzz.token_sort_ratio(query_text.lower(), n.lower()), reverse=True)[:6]
 
     if suggestions:
