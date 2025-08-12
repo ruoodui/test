@@ -2,6 +2,7 @@ import os
 import io
 import csv
 import json
+import re
 import pandas as pd
 from thefuzz import process, fuzz
 
@@ -84,6 +85,14 @@ if not os.path.exists(PRICES_PATH):
 if not os.path.exists(URLS_PATH):
     raise FileNotFoundError(f"❌ ملف الروابط غير موجود: {URLS_PATH}")
 
+# ======= تنظيف وتحويل الأسعار =======
+def clean_price(value):
+    cleaned = re.sub(r'[^0-9.]', '', str(value))
+    try:
+        return float(cleaned)
+    except:
+        return None
+
 # ======= تحميل البيانات =======
 df = pd.read_excel(PRICES_PATH)
 
@@ -96,8 +105,9 @@ df.rename(columns={
     'العنوان': 'address'
 }, inplace=True)
 
+df['price'] = df['price'].apply(clean_price)
+df = df.dropna(subset=['price'])
 df['name'] = df['name'].astype(str).str.strip()
-df['price'] = df['price'].astype(str).str.replace(',', '').astype(float)
 
 with open(URLS_PATH, encoding='utf-8') as f:
     phones_urls_data = json.load(f)
@@ -110,7 +120,6 @@ for brand_group in phones_urls_data.values():
     for device in brand_group:
         url_map[clean_name(device['name'])] = device['url']
 
-# ======= تحسين البحث عن الروابط =======
 def get_device_url(name):
     cleaned = clean_name(name)
     best_match = process.extractOne(cleaned, url_map.keys(), scorer=fuzz.partial_ratio)
@@ -134,7 +143,6 @@ search_keyboard = [
 ]
 search_markup = InlineKeyboardMarkup(search_keyboard)
 
-# ======= دوال مساعدة =======
 def get_unique_stores():
     return sorted(df['store'].dropna().unique().tolist())
 
@@ -178,7 +186,7 @@ async def search_choice_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_text("💰 أرسل السعر المطلوب (رقم فقط):")
         return TYPING_PRICE
 
-    elif choice in ("new_search", "go_back"):
+    elif choice == "new_search":
         await query.edit_message_text("👋 كيف تريد البحث عن الهواتف؟", reply_markup=search_markup)
         return CHOOSING
 
@@ -190,26 +198,23 @@ async def store_selection_handler(update: Update, context: ContextTypes.DEFAULT_
     await query.edit_message_text(f"🔍 البحث داخل المتجر: {selected_store}\n\nأرسل اسم الهاتف أو جزء منه:")
     return TYPING_NAME
 
-# ======= تعديل دالة البحث بالاسم مع قائمة اقتراحات نصية تبدأ من 60% وعدد الاقتراحات 10 =======
 async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query_text = update.message.text.strip()
     selected_store = context.user_data.get('selected_store')
     filtered_df = df[df['store'].str.lower() == selected_store.lower()] if selected_store else df
     names_list = filtered_df['name'].tolist()
 
-    # البحث المباشر بنسب تطابق >= 90%
     matched_names = [name for name, score in [(n, fuzz.token_sort_ratio(query_text.lower(), n.lower())) for n in names_list] if score >= 90]
 
     if matched_names:
         results = filtered_df[filtered_df['name'].isin(matched_names)]
         return await send_results(update, context, results)
 
-    # اقتراحات بنسب تطابق بين 60% و 89% (عدد 10 اقتراحات)
     suggestions = [name for name, score in [(n, fuzz.token_sort_ratio(query_text.lower(), n.lower())) for n in names_list] if 60 <= score < 90]
     suggestions = sorted(suggestions, key=lambda n: fuzz.token_sort_ratio(query_text.lower(), n.lower()), reverse=True)[:10]
 
     if suggestions:
-        context.user_data['suggestions'] = suggestions  # حفظ الاقتراحات في user_data
+        context.user_data['suggestions'] = suggestions
         text = "❌ لم أجد تطابقًا دقيقًا، هل تقصد أحد هذه الأجهزة؟\n"
         for i, name in enumerate(suggestions, start=1):
             text += f"{i}. {name}\n"
@@ -222,7 +227,6 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=search_markup)
         return CHOOSING
 
-# ======= استقبال اختيار رقم الاقتراح =======
 async def suggestion_choice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_input = update.message.text.strip()
     suggestions = context.user_data.get('suggestions', [])
@@ -253,18 +257,11 @@ async def suggestion_choice_handler(update: Update, context: ContextTypes.DEFAUL
                     )
                     await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
             context.user_data.pop('suggestions', None)
-
-            back_keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔄 بحث جديد", callback_data="new_search")]
-            ])
-            await update.message.reply_text("يمكنك الآن البدء ببحث جديد:", reply_markup=back_keyboard)
-
             return CHOOSING
         else:
             await update.message.reply_text("❌ الرقم غير صالح. الرجاء اختيار رقم من القائمة.")
             return SELECTING_SUGGESTION
     else:
-        # إعادة البحث بالنص الجديد
         context.user_data.pop('suggestions', None)
         return await search_by_name(update, context)
 
@@ -295,12 +292,6 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
             await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
     context.user_data.pop('selected_store', None)
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔄 بحث جديد", callback_data="new_search")]
-    ])
-    await query.message.reply_text("يمكنك الآن البدء ببحث جديد:", reply_markup=keyboard)
-
     return CHOOSING
 
 async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, results):
@@ -323,14 +314,12 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
         )
         await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
-    back_keyboard = InlineKeyboardMarkup([
+    # زر بحث جديد
+    new_search_button = InlineKeyboardMarkup([
         [InlineKeyboardButton("🔄 بحث جديد", callback_data="new_search")]
     ])
+    await update.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=new_search_button)
 
-    await update.message.reply_text(
-        "يمكنك الآن البدء ببحث جديد:",
-        reply_markup=back_keyboard
-    )
     return CHOOSING
 
 async def search_by_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -352,22 +341,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء العملية. يمكنك البدء من جديد باستخدام /start", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
-# ======= دوال إحصائيات المشرف =======
-async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id not in ADMIN_IDS:
-        await update.message.reply_text("❌ هذا الأمر مخصص للمشرف فقط.")
-        return
-
-    users = load_users()
-    user_count = len(users)
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("⬇️ تصدير المستخدمين CSV", callback_data="export_users_csv")]
-    ])
-
-    await update.message.reply_text(f"👥 عدد مستخدمي البوت: {user_count}", reply_markup=keyboard)
-
+# ======= دالة تصدير المستخدمين CSV =======
 async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -392,8 +366,23 @@ async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAUL
     bio = io.BytesIO(output.getvalue().encode("utf-8"))
     bio.name = "users.csv"
 
-    # إرسال الملف للمستخدم مباشرة
-    await context.bot.send_document(chat_id=user_id, document=InputFile(bio, filename="users.csv"))
+    await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
+
+# ======= أمر إحصائيات المشرف =======
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("❌ هذا الأمر مخصص للمشرف فقط.")
+        return
+
+    users = load_users()
+    user_count = len(users)
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("⬇️ تصدير المستخدمين CSV", callback_data="export_users_csv")]
+    ])
+
+    await update.message.reply_text(f"👥 عدد مستخدمي البوت: {user_count}", reply_markup=keyboard)
 
 # ======= تشغيل التطبيق =======
 def main():
@@ -403,14 +392,15 @@ def main():
         entry_points=[CommandHandler("start", start)],
         states={
             CHOOSING: [
-                CallbackQueryHandler(search_choice_handler),
-                CallbackQueryHandler(subscription_check_callback, pattern="^check_subscription$"),
-                CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"),
-                CallbackQueryHandler(search_choice_handler, pattern="^new_search$"),
+                CallbackQueryHandler(search_choice_handler, per_message=True),
+                CallbackQueryHandler(subscription_check_callback, pattern="^check_subscription$", per_message=True),
+                CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$", per_message=True),
+                CallbackQueryHandler(search_choice_handler, pattern="^new_search$", per_message=True),
+                CallbackQueryHandler(store_selection_handler, pattern="^store_select::", per_message=True),
             ],
             TYPING_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_by_name)],
             SELECTING_SUGGESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, suggestion_choice_handler)],
-            SELECTING_STORE: [CallbackQueryHandler(store_selection_handler, pattern="^store_select::")],
+            SELECTING_STORE: [CallbackQueryHandler(store_selection_handler, pattern="^store_select::", per_message=True)],
             TYPING_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, search_by_price)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
