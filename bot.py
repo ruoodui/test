@@ -110,6 +110,18 @@ for brand_group in phones_urls_data.values():
     for device in brand_group:
         url_map[clean_name(device['name'])] = device['url']
 
+# ======= تحسين البحث عن الروابط =======
+def get_device_url(name):
+    cleaned = clean_name(name)
+    best_match = process.extractOne(cleaned, url_map.keys(), scorer=fuzz.partial_ratio)
+    if best_match and best_match[1] >= 70:
+        return url_map[best_match[0]]
+    simplified = cleaned.split('(')[0].strip()
+    best_match = process.extractOne(simplified, url_map.keys(), scorer=fuzz.partial_ratio)
+    if best_match and best_match[1] >= 70:
+        return url_map[best_match[0]]
+    return None
+
 # ======= حالات الحوار =======
 CHOOSING, TYPING_NAME, SELECTING_STORE, TYPING_PRICE = range(4)
 
@@ -126,13 +138,6 @@ search_markup = InlineKeyboardMarkup(search_keyboard)
 def get_unique_stores():
     return sorted(df['store'].dropna().unique().tolist())
 
-def get_device_url(name):
-    cleaned = clean_name(name)
-    best_match = process.extractOne(cleaned, url_map.keys(), scorer=fuzz.token_sort_ratio)
-    if best_match and best_match[1] >= 80:
-        return url_map[best_match[0]]
-    return None
-
 # ======= دوال البوت =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -141,10 +146,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     store_user(update.effective_user)
-    await update.message.reply_text(
-        WELCOME_MSG,
-        reply_markup=search_markup
-    )
+    await update.message.reply_text(WELCOME_MSG, reply_markup=search_markup)
     return CHOOSING
 
 async def subscription_check_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -177,10 +179,7 @@ async def search_choice_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return TYPING_PRICE
 
     elif choice in ("new_search", "go_back"):
-        await query.edit_message_text(
-            "👋 كيف تريد البحث عن الهواتف؟ اختر خيارًا:",
-            reply_markup=search_markup
-        )
+        await query.edit_message_text("👋 كيف تريد البحث عن الهواتف؟", reply_markup=search_markup)
         return CHOOSING
 
 async def store_selection_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -197,7 +196,7 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     filtered_df = df[df['store'].str.lower() == selected_store.lower()] if selected_store else df
     names_list = filtered_df['name'].tolist()
 
-    matches = [(name, fuzz.token_sort_ratio(query_text, name.lower())) for name in names_list]
+    matches = [(name, fuzz.WRatio(query_text, name.lower())) for name in names_list]
     good_matches = [match for match in matches if match[1] >= 75]
 
     if good_matches:
@@ -242,6 +241,10 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
     else:
         for _, row in results.iterrows():
             url = get_device_url(row['name'])
+            buttons = []
+            if url:
+                buttons.append([InlineKeyboardButton("📄 عرض المواصفات", url=url)])
+            buttons.append([InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="go_back")])
             text = (
                 f"📱 الاسم: {row['name']}\n"
                 f"💾 الرام والذاكرة: {row['ram_memory']}\n"
@@ -250,11 +253,9 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
                 f"🏪 المتجر: {row['store']}\n"
                 f"📍 العنوان: {row['address']}\n"
             )
-            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("📄 عرض المواصفات", url=url)]]) if url else None
-            await query.edit_message_text(text, reply_markup=keyboard)
+            await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
     context.user_data.pop('selected_store', None)
-    await query.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=search_markup)
     return CHOOSING
 
 async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, results):
@@ -264,6 +265,10 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
 
     for _, row in results.iterrows():
         url = get_device_url(row['name'])
+        buttons = []
+        if url:
+            buttons.append([InlineKeyboardButton("📄 عرض المواصفات", url=url)])
+        buttons.append([InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="go_back")])
         text = (
             f"📱 الاسم: {row['name']}\n"
             f"💾 الرام والذاكرة: {row['ram_memory']}\n"
@@ -272,10 +277,12 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
             f"🏪 المتجر: {row['store']}\n"
             f"📍 العنوان: {row['address']}\n"
         )
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("📄 عرض المواصفات", url=url)]]) if url else None
-        await update.message.reply_text(text, reply_markup=keyboard)
+        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
 
-    await update.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=search_markup)
+    await update.message.reply_text(
+        "اختر طريقة أخرى للبحث:",
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")]])
+    )
     return CHOOSING
 
 async def search_by_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -311,10 +318,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("⬇️ تصدير المستخدمين CSV", callback_data="export_users_csv")]
     ])
 
-    await update.message.reply_text(
-        f"👥 عدد مستخدمي البوت: {user_count}",
-        reply_markup=keyboard
-    )
+    await update.message.reply_text(f"👥 عدد مستخدمي البوت: {user_count}", reply_markup=keyboard)
 
 async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -361,8 +365,6 @@ def main():
     app.add_handler(conv_handler)
     app.add_handler(CallbackQueryHandler(name_selection_handler, pattern="^name_select::"))
     app.add_handler(CallbackQueryHandler(subscription_check_callback, pattern="^check_subscription$"))
-
-    # إضافة أمر الإحصائيات للمشرف
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
 
