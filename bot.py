@@ -110,7 +110,6 @@ for brand_group in phones_urls_data.values():
     for device in brand_group:
         url_map[clean_name(device['name'])] = device['url']
 
-# ======= تحسين البحث عن الروابط =======
 def get_device_url(name):
     cleaned = clean_name(name)
     best_match = process.extractOne(cleaned, url_map.keys(), scorer=fuzz.partial_ratio)
@@ -121,27 +120,6 @@ def get_device_url(name):
     if best_match and best_match[1] >= 70:
         return url_map[best_match[0]]
     return None
-
-# ======= دالة البحث المعدلة (اسم الجهاز فقط) =======
-def search_name_with_suggestions(query_text, names_list):
-    cleaned_query = query_text.lower().strip()
-    # بحث أفضل تطابق
-    best_match = process.extractOne(cleaned_query, names_list, scorer=fuzz.WRatio)
-
-    if best_match and best_match[1] >= 90:
-        # تطابق عالي جداً: إرجاع فقط هذا الاسم
-        return [best_match[0]], None
-
-    # لو ما في تطابق ≥ 90%، نبحث عن اقتراحات ≥ 70%
-    suggestions = [match for match in process.extract(cleaned_query, names_list, scorer=fuzz.WRatio) if match[1] >= 70]
-
-    if suggestions:
-        # نرجع قائمة الأسماء فقط
-        suggested_names = [match[0] for match in sorted(suggestions, key=lambda x: x[1], reverse=True)[:6]]
-        return None, suggested_names
-
-    # لا نتائج قريبة
-    return None, None
 
 # ======= حالات الحوار =======
 CHOOSING, TYPING_NAME, SELECTING_STORE, TYPING_PRICE = range(4)
@@ -158,6 +136,18 @@ search_markup = InlineKeyboardMarkup(search_keyboard)
 # ======= دوال مساعدة =======
 def get_unique_stores():
     return sorted(df['store'].dropna().unique().tolist())
+
+# ======= دالة بحث بالاسم مع اقتراحات =======
+def search_name_with_suggestions(query_text, names_list):
+    query_clean = query_text.lower()
+    matches = [(name, fuzz.token_sort_ratio(query_clean, name.lower())) for name in names_list]
+    matched_names = [name for name, score in matches if score >= 90]
+    if matched_names:
+        return matched_names, []
+    # إذا لم توجد تطابقات >=90، نعرض المقترحات >=70
+    suggestions = [name for name, score in matches if 70 <= score < 90]
+    suggestions_sorted = sorted(suggestions, key=lambda n: process.extractOne(n, [query_clean], scorer=fuzz.token_sort_ratio)[1], reverse=True)[:6]
+    return [], suggestions_sorted
 
 # ======= دوال البوت =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -229,7 +219,6 @@ async def search_by_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
             for name in suggestions
         ]
         keyboard.append([InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")])
-        keyboard.append([InlineKeyboardButton("🔙 رجوع", callback_data="go_back")])
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
@@ -259,7 +248,7 @@ async def name_selection_handler(update: Update, context: ContextTypes.DEFAULT_T
             buttons = []
             if url:
                 buttons.append([InlineKeyboardButton("📄 عرض المواصفات", url=url)])
-            buttons.append([InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="go_back")])
+            buttons.append([InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")])
             text = (
                 f"📱 الاسم: {row['name']}\n"
                 f"💾 الرام والذاكرة: {row['ram_memory']}\n"
@@ -283,7 +272,7 @@ async def send_results(update: Update, context: ContextTypes.DEFAULT_TYPE, resul
         buttons = []
         if url:
             buttons.append([InlineKeyboardButton("📄 عرض المواصفات", url=url)])
-        buttons.append([InlineKeyboardButton("🔙 رجوع للقائمة", callback_data="go_back")])
+        buttons.append([InlineKeyboardButton("🔍 بحث جديد", callback_data="new_search")])
         text = (
             f"📱 الاسم: {row['name']}\n"
             f"💾 الرام والذاكرة: {row['ram_memory']}\n"
