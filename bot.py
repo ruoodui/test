@@ -343,6 +343,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ======= دالة تصدير المستخدمين CSV =======
 async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("🔔 export_users_csv_callback called")
     query = update.callback_query
     await query.answer()
 
@@ -366,7 +367,13 @@ async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAUL
     bio = io.BytesIO(output.getvalue().encode("utf-8"))
     bio.name = "users.csv"
 
-    await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
+    try:
+        # إرسال الملف مباشرة في الخاص
+        await context.bot.send_document(chat_id=user_id, document=InputFile(bio, filename="users.csv"))
+        await query.edit_message_text("✅ تم إرسال ملف المستخدمين إليك في الخاص.")
+    except Exception as e:
+        print(f"❌ خطأ أثناء إرسال الملف: {e}")
+        await query.message.reply_text("❌ حدث خطأ أثناء إرسال الملف. حاول مرة أخرى.")
 
 # ======= أمر إحصائيات المشرف =======
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -409,8 +416,6 @@ def main():
 
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("stats", stats_command))
-
-    print("✅ البوت يعمل الآن...")
     app.run_polling()
 
 if __name__ == "__main__":
