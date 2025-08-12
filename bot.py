@@ -348,12 +348,13 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء العملية. يمكنك البدء من جديد باستخدام /start", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
-# ======= دالة تصدير المستخدمين CSV =======
+# ======= دالة تصدير المستخدمين CSV (تم استبدالها) =======
 async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     user_id = query.from_user.id
+    # التحقق من صلاحية المستخدم (مشرف فقط)
     if user_id not in ADMIN_IDS:
         await query.answer("❌ هذا الأمر مخصص للمشرف فقط.", show_alert=True)
         return
@@ -363,16 +364,18 @@ async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAUL
         await query.message.reply_text("❌ لا يوجد مستخدمون مسجلون حالياً.")
         return
 
+    # إنشاء ملف CSV في الذاكرة
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["id", "name", "username"])
+    writer.writerow(["id", "name", "username"])  # العناوين
     for user in users.values():
         writer.writerow([user.get("id", ""), user.get("name", ""), user.get("username", "")])
 
-    output.seek(0)
+    output.seek(0)  # إعادة المؤشر لبداية الملف
     bio = io.BytesIO(output.getvalue().encode("utf-8"))
     bio.name = "users.csv"
 
+    # إرسال ملف CSV للمشرف
     await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
 
 # ======= أمر إحصائيات المشرف =======
