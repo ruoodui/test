@@ -95,7 +95,6 @@ def clean_price(value):
 
 # ======= تحميل البيانات =======
 df = pd.read_excel(PRICES_PATH)
-
 df.rename(columns={
     'الاسم (name)': 'name',
     'الرام والذاكره': 'ram_memory',
@@ -256,13 +255,6 @@ async def suggestion_choice_handler(update: Update, context: ContextTypes.DEFAUL
                         f"📍 العنوان: {row['address']}\n"
                     )
                     await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons))
-
-                # إضافة زر "بحث جديد" بعد عرض النتائج
-                new_search_button = InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔄 بحث جديد", callback_data="new_search")]
-                ])
-                await update.message.reply_text("اختر طريقة أخرى للبحث:", reply_markup=new_search_button)
-
             context.user_data.pop('suggestions', None)
             return CHOOSING
         else:
@@ -348,13 +340,12 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ تم إلغاء العملية. يمكنك البدء من جديد باستخدام /start", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
-# ======= دالة تصدير المستخدمين CSV (تم استبدالها) =======
+# ======= دالة تصدير المستخدمين CSV =======
 async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     user_id = query.from_user.id
-    # التحقق من صلاحية المستخدم (مشرف فقط)
     if user_id not in ADMIN_IDS:
         await query.answer("❌ هذا الأمر مخصص للمشرف فقط.", show_alert=True)
         return
@@ -364,18 +355,16 @@ async def export_users_csv_callback(update: Update, context: ContextTypes.DEFAUL
         await query.message.reply_text("❌ لا يوجد مستخدمون مسجلون حالياً.")
         return
 
-    # إنشاء ملف CSV في الذاكرة
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["id", "name", "username"])  # العناوين
+    writer.writerow(["id", "name", "username"])
     for user in users.values():
         writer.writerow([user.get("id", ""), user.get("name", ""), user.get("username", "")])
 
-    output.seek(0)  # إعادة المؤشر لبداية الملف
+    output.seek(0)
     bio = io.BytesIO(output.getvalue().encode("utf-8"))
     bio.name = "users.csv"
 
-    # إرسال ملف CSV للمشرف
     await query.message.reply_document(document=InputFile(bio, filename="users.csv"))
 
 # ======= أمر إحصائيات المشرف =======
@@ -404,7 +393,6 @@ def main():
             CHOOSING: [
                 CallbackQueryHandler(search_choice_handler),
                 CallbackQueryHandler(subscription_check_callback, pattern="^check_subscription$"),
-                CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"),
                 CallbackQueryHandler(search_choice_handler, pattern="^new_search$"),
                 CallbackQueryHandler(store_selection_handler, pattern="^store_select::"),
             ],
@@ -419,6 +407,8 @@ def main():
 
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("stats", stats_command))
+    # ✅ إضافة زر تصدير المستخدمين خارج الكونفرسيشن
+    app.add_handler(CallbackQueryHandler(export_users_csv_callback, pattern="^export_users_csv$"))
 
     print("✅ البوت يعمل الآن...")
     app.run_polling()
